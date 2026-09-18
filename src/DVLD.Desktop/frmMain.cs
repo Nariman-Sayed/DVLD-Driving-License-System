@@ -147,7 +147,5 @@ namespace DVLD
                 MessageBox.Show($"Connection failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-         
     }
 }
