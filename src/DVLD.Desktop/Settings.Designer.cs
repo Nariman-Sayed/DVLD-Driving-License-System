@@ -22,5 +22,17 @@ namespace DVLD.Desktop {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RememberedUsername {
+            get {
+                return ((string)(this["RememberedUsername"]));
+            }
+            set {
+                this["RememberedUsername"] = value;
+            }
+        }
     }
 }
