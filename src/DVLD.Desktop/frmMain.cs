@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DVLD.Desktop.Common;
 
 namespace DVLD.Desktop
 {
@@ -127,8 +128,7 @@ namespace DVLD.Desktop
         {
             try
             {
-                using var client = new HttpClient();
-                client.BaseAddress = new Uri("https://localhost:7226/");
+                using var client = ApiClientFactory.CreateAuthorizedClient();
 
                 var response = await client.GetAsync("api/person");
                 string content = await response.Content.ReadAsStringAsync();
