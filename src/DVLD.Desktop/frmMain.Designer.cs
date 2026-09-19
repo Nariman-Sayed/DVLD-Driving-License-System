@@ -1,4 +1,4 @@
-﻿namespace DVLD
+﻿namespace DVLD.Desktop
 {
     partial class frmMain
     {

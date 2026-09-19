@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace DVLD
+namespace DVLD.Desktop
 {
     public partial class frmMain : Form
     {
