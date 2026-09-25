@@ -37,6 +37,17 @@ namespace DVLD.Api.IntegrationTests
 
                 services.AddScoped<IApplicationTypeRepository, FakeApplicationTypeRepository>();
 
+                // Same swap for the test type repository.
+                var testTypeDescriptor = services.SingleOrDefault(
+                    d => d.ServiceType == typeof(ITestTypeRepository));
+
+                if (testTypeDescriptor is not null)
+                {
+                    services.Remove(testTypeDescriptor);
+                }
+
+                services.AddScoped<ITestTypeRepository, FakeTestTypeRepository>();
+
                 // Register the fixed test identity as the default authentication scheme,
                 // overriding the JWT flow from Program.cs so [Authorize] endpoints pass
                 // without issuing real tokens.
