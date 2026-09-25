@@ -46,6 +46,8 @@ namespace DVLD.Api.Controllers
             return CreatedAtAction(nameof(GetApplicationById), new { id = created.ApplicationID }, created);
         }
 
+        // Status transitions are intentionally unconstrained for now; a full state
+        // machine (New -> Cancelled/Completed) is a deferred concern.
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateApplication(int id, BaseApplicationDto application)
         {

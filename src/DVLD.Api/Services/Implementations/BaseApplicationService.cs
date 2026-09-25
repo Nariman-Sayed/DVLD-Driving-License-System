@@ -67,6 +67,8 @@ namespace DVLD.Api.Services.Implementations
             return application;
         }
 
+        // Deferred: enforce a New -> Cancelled/Completed state machine instead of
+        // accepting a free-form status here (flagged for a later phase).
         public async Task<bool> UpdateApplicationAsync(int id, BaseApplicationDto application)
         {
             return await _repository.UpdateAsync(id, application);
