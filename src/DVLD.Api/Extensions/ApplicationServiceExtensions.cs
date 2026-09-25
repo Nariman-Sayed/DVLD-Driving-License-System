@@ -16,6 +16,10 @@ namespace DVLD.Api.Extensions
             services.AddScoped<IPersonService, PersonService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IApplicationTypeRepository, ApplicationTypeRepository>();
+            services.AddScoped<IApplicationTypeService, ApplicationTypeService>();
+            services.AddScoped<ITestTypeRepository, TestTypeRepository>();
+            services.AddScoped<ITestTypeService, TestTypeService>();
             return services;
         }
     }
