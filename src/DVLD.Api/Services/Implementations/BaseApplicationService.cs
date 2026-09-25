@@ -26,8 +26,18 @@ namespace DVLD.Api.Services.Implementations
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<BaseApplicationDto> AddNewApplicationAsync(BaseApplicationDto application)
+        public async Task<BaseApplicationDto> AddNewApplicationAsync(CreateBaseApplicationRequest request, int createdByUserId)
         {
+            var application = new BaseApplicationDto
+            {
+                ApplicantPersonID = request.ApplicantPersonID,
+                ApplicationTypeID = request.ApplicationTypeID,
+                ApplicationDate = DateTime.UtcNow,
+                ApplicationStatus = 1, // New
+                LastStatusDate = DateTime.UtcNow,
+                CreatedByUserID = createdByUserId
+            };
+
             var newId = await _repository.AddAsync(application);
             application.ApplicationID = newId;
             _logger.LogInformation("Added new application: {ApplicationId}", application.ApplicationID);

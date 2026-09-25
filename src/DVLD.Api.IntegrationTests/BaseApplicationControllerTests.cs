@@ -53,15 +53,10 @@ namespace DVLD.Api.IntegrationTests
         [Fact]
         public async Task AddNewApplication_ReturnsCreatedWithLocation()
         {
-            var newApplication = new BaseApplicationDto
+            var newApplication = new CreateBaseApplicationRequest
             {
                 ApplicantPersonID = 1,
-                ApplicationDate = new DateTime(2026, 2, 1),
-                ApplicationTypeID = 2,
-                ApplicationStatus = 1,
-                LastStatusDate = new DateTime(2026, 2, 1),
-                PaidFees = 5m,
-                CreatedByUserID = 1
+                ApplicationTypeID = 2
             };
 
             var response = await _client.PostAsJsonAsync("/api/BaseApplication", newApplication);
@@ -76,6 +71,14 @@ namespace DVLD.Api.IntegrationTests
             var created = await response.Content.ReadFromJsonAsync<BaseApplicationDto>();
             Assert.NotNull(created);
             Assert.Equal(2, created.ApplicationID);
+            Assert.Equal(1, created.ApplicantPersonID);
+            Assert.Equal(2, created.ApplicationTypeID);
+
+            // Server-derived fields: the client only sent person + type.
+            Assert.Equal(1, created.ApplicationStatus);
+            Assert.Equal(1, created.CreatedByUserID);
+            Assert.NotEqual(default, created.ApplicationDate);
+            Assert.NotEqual(default, created.LastStatusDate);
         }
 
         [Fact]

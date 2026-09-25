@@ -6,7 +6,7 @@ namespace DVLD.Api.Services.Interfaces
     {
         Task<List<BaseApplicationDto>> GetAllApplicationsAsync();
         Task<BaseApplicationDto?> GetApplicationByIdAsync(int id);
-        Task<BaseApplicationDto> AddNewApplicationAsync(BaseApplicationDto application);
+        Task<BaseApplicationDto> AddNewApplicationAsync(CreateBaseApplicationRequest request, int createdByUserId);
         Task<bool> UpdateApplicationAsync(int id, BaseApplicationDto application);
     }
 }

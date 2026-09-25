@@ -2,6 +2,7 @@ using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace DVLD.Api.Controllers
 {
@@ -32,9 +33,16 @@ namespace DVLD.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<BaseApplicationDto>> AddNewApplication(BaseApplicationDto application)
+        public async Task<ActionResult<BaseApplicationDto>> AddNewApplication(CreateBaseApplicationRequest request)
         {
-            var created = await _service.AddNewApplicationAsync(application);
+            // The acting user is taken from the authenticated token, never from the body.
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized("Authenticated user id claim is missing or invalid.");
+            }
+
+            var created = await _service.AddNewApplicationAsync(request, userId);
             return CreatedAtAction(nameof(GetApplicationById), new { id = created.ApplicationID }, created);
         }
 
