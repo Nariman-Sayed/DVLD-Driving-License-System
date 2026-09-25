@@ -20,6 +20,8 @@ namespace DVLD.Api.Extensions
             services.AddScoped<IApplicationTypeService, ApplicationTypeService>();
             services.AddScoped<ITestTypeRepository, TestTypeRepository>();
             services.AddScoped<ITestTypeService, TestTypeService>();
+            services.AddScoped<IBaseApplicationRepository, BaseApplicationRepository>();
+            services.AddScoped<IBaseApplicationService, BaseApplicationService>();
             return services;
         }
     }
