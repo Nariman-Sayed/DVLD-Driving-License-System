@@ -50,5 +50,14 @@ namespace DVLD.Api.IntegrationTests.Fakes
             _applications.Add(application);
             return Task.FromResult(true);
         }
+
+        public Task<int?> GetActiveApplicationIdAsync(int applicantPersonId, int applicationTypeId)
+        {
+            var applicationId = _applications.FirstOrDefault(
+                a => a.ApplicantPersonID == applicantPersonId
+                     && a.ApplicationTypeID == applicationTypeId
+                     && a.ApplicationStatus == 1)?.ApplicationID;
+            return Task.FromResult(applicationId);
+        }
     }
 }

@@ -97,6 +97,24 @@ namespace DVLD.Api.Data.Repositories
             return rowsAffected > 0;
         }
 
+        public async Task<int?> GetActiveApplicationIdAsync(int applicantPersonId, int applicationTypeId)
+        {
+            // Mirrors the course check (ApplicationStatus = 1 is "New"/active).
+            using var connection = new SqlConnection(_connectionString);
+            string query = @"SELECT TOP 1 ApplicationID
+                             FROM Applications
+                             WHERE ApplicantPersonID = @ApplicantPersonID
+                               AND ApplicationTypeID = @ApplicationTypeID
+                               AND ApplicationStatus = 1";
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@ApplicantPersonID", applicantPersonId);
+            command.Parameters.AddWithValue("@ApplicationTypeID", applicationTypeId);
+
+            await connection.OpenAsync();
+            var result = await command.ExecuteScalarAsync();
+            return result is null || result == DBNull.Value ? null : Convert.ToInt32(result);
+        }
+
         private static BaseApplicationDto MapReaderToDto(SqlDataReader reader)
         {
             return new BaseApplicationDto

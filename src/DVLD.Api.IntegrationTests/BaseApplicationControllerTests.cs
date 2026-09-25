@@ -82,6 +82,25 @@ namespace DVLD.Api.IntegrationTests
         }
 
         [Fact]
+        public async Task AddNewApplication_WithExistingActiveApplication_ReturnsBadRequest()
+        {
+            // The seeded application (Person 1, ApplicationType 1) is active, so a
+            // second New application for the same person/type must be rejected.
+            var duplicate = new CreateBaseApplicationRequest
+            {
+                ApplicantPersonID = 1,
+                ApplicationTypeID = 1
+            };
+
+            var response = await _client.PostAsJsonAsync("/api/BaseApplication", duplicate);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.Contains("already has an active application", content);
+        }
+
+        [Fact]
         public async Task GetAllApplications_WithoutToken_ReturnsUnauthorized()
         {
             // A fresh host without the TestAuth override, so the real JWT scheme

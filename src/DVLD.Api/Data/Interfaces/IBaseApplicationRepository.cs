@@ -8,5 +8,6 @@ namespace DVLD.Api.Data.Interfaces
         Task<BaseApplicationDto?> GetByIdAsync(int id);
         Task<int> AddAsync(BaseApplicationDto application);
         Task<bool> UpdateAsync(int id, BaseApplicationDto application);
+        Task<int?> GetActiveApplicationIdAsync(int applicantPersonId, int applicationTypeId);
     }
 }

@@ -1,4 +1,5 @@
 using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 
@@ -28,6 +29,15 @@ namespace DVLD.Api.Services.Implementations
 
         public async Task<BaseApplicationDto> AddNewApplicationAsync(CreateBaseApplicationRequest request, int createdByUserId)
         {
+            var activeApplicationId = await _repository.GetActiveApplicationIdAsync(
+                request.ApplicantPersonID, request.ApplicationTypeID);
+
+            if (activeApplicationId is not null)
+            {
+                throw new ApplicationValidationException(
+                    $"Person with ID {request.ApplicantPersonID} already has an active application for ApplicationType ID {request.ApplicationTypeID}.");
+            }
+
             var application = new BaseApplicationDto
             {
                 ApplicantPersonID = request.ApplicantPersonID,
