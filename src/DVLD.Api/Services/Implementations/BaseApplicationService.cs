@@ -8,11 +8,16 @@ namespace DVLD.Api.Services.Implementations
     public class BaseApplicationService : IBaseApplicationService
     {
         private readonly IBaseApplicationRepository _repository;
+        private readonly IApplicationTypeRepository _applicationTypeRepository;
         private readonly ILogger<BaseApplicationService> _logger;
 
-        public BaseApplicationService(IBaseApplicationRepository repository, ILogger<BaseApplicationService> logger)
+        public BaseApplicationService(
+            IBaseApplicationRepository repository,
+            IApplicationTypeRepository applicationTypeRepository,
+            ILogger<BaseApplicationService> logger)
         {
             _repository = repository;
+            _applicationTypeRepository = applicationTypeRepository;
             _logger = logger;
         }
 
@@ -38,6 +43,13 @@ namespace DVLD.Api.Services.Implementations
                     $"Person with ID {request.ApplicantPersonID} already has an active application for ApplicationType ID {request.ApplicationTypeID}.");
             }
 
+            var applicationType = await _applicationTypeRepository.GetByIdAsync(request.ApplicationTypeID);
+            if (applicationType is null)
+            {
+                throw new ApplicationValidationException(
+                    $"ApplicationType with ID {request.ApplicationTypeID} not found.");
+            }
+
             var application = new BaseApplicationDto
             {
                 ApplicantPersonID = request.ApplicantPersonID,
@@ -45,6 +57,7 @@ namespace DVLD.Api.Services.Implementations
                 ApplicationDate = DateTime.UtcNow,
                 ApplicationStatus = 1, // New
                 LastStatusDate = DateTime.UtcNow,
+                PaidFees = applicationType.ApplicationFees,
                 CreatedByUserID = createdByUserId
             };
 

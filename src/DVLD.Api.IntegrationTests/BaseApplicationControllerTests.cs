@@ -79,6 +79,26 @@ namespace DVLD.Api.IntegrationTests
             Assert.Equal(1, created.CreatedByUserID);
             Assert.NotEqual(default, created.ApplicationDate);
             Assert.NotEqual(default, created.LastStatusDate);
+
+            // PaidFees is populated from ApplicationType 2's ApplicationFees (Renew = 5).
+            Assert.Equal(5m, created.PaidFees);
+        }
+
+        [Fact]
+        public async Task AddNewApplication_WithUnknownApplicationType_ReturnsBadRequest()
+        {
+            var request = new CreateBaseApplicationRequest
+            {
+                ApplicantPersonID = 1,
+                ApplicationTypeID = 999
+            };
+
+            var response = await _client.PostAsJsonAsync("/api/BaseApplication", request);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.Contains("ApplicationType with ID 999 not found", content);
         }
 
         [Fact]
