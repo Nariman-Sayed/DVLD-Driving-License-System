@@ -28,6 +28,9 @@ namespace DVLD.Api
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
+            builder.Services.AddProblemDetails();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
             builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DVLDConnection")));
 
@@ -35,7 +38,8 @@ namespace DVLD.Api
             builder.Services.AddScoped<IPersonService, PersonService>();
 
             var app = builder.Build();
-            
+
+            app.UseExceptionHandler();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -48,19 +52,8 @@ namespace DVLD.Api
             app.UseAuthorization();
             app.MapControllers();
 
-            try
-            {
-                Log.Information("Starting DVLD API");
-                app.Run();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "DVLD API failed to start");
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
+            Log.Information("Starting DVLD API");
+            app.Run();
         }
     }
 }
