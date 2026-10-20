@@ -6,7 +6,7 @@ using DVLD.Api.Services.Interfaces;
 
 namespace DVLD.Api.Extensions
 {
-    public static class ApplicationServiceExtensions
+    internal static class ApplicationServiceExtensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {

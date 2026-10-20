@@ -4,22 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DVLD.Api.Controllers
 {
+    // Must stay public: ASP.NET Core MVC only discovers public controller types.
     [ApiController]
     [Route("api/[controller]")]
-    public class PersonController : ControllerBase
+    public sealed class PersonController(IPersonService personService) : ControllerBase
     {
-        private readonly IPersonService _personService;
-
-        public PersonController(IPersonService personService)
-        {
-            _personService = personService;
-        }
-
         // GET: api/person
         [HttpGet]
         public async Task<ActionResult<List<PersonDto>>> GetAllPeople()
         {
-            var people = await _personService.GetAllPeopleAsync();
+            var people = await personService.GetAllPeopleAsync();
             return Ok(people);
         }
 
@@ -27,7 +21,7 @@ namespace DVLD.Api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<PersonDto>> GetPersonById(int id)
         {
-            var person = await _personService.GetPersonByIdAsync(id);
+            var person = await personService.GetPersonByIdAsync(id);
             return person is null ? NotFound($"Person with ID {id} not found.") : Ok(person);
         }
 
@@ -35,7 +29,7 @@ namespace DVLD.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<PersonDto>> AddNewPerson(PersonDto person)
         {
-            var created = await _personService.AddNewPersonAsync(person);
+            var created = await personService.AddNewPersonAsync(person);
             return CreatedAtAction(nameof(GetPersonById), new { id = created.PersonID }, created);
         }
 
@@ -43,7 +37,7 @@ namespace DVLD.Api.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdatePerson(int id, PersonDto person)
         {
-            var updated = await _personService.UpdatePersonAsync(id, person);
+            var updated = await personService.UpdatePersonAsync(id, person);
             return updated ? NoContent() : NotFound($"Person with ID {id} not found.");
         }
 
@@ -51,7 +45,7 @@ namespace DVLD.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeletePerson(int id)
         {
-            var deleted = await _personService.DeletePersonAsync(id);
+            var deleted = await personService.DeletePersonAsync(id);
             return deleted ? NoContent() : NotFound($"Person with ID {id} not found.");
         }
     }

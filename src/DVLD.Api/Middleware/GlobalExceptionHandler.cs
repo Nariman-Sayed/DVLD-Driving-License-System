@@ -3,21 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DVLD.Api.Middleware
 {
-    public class GlobalExceptionHandler : IExceptionHandler
+    internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
     {
-        private readonly ILogger<GlobalExceptionHandler> _logger;
-
-        public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
-        {
-            _logger = logger;
-        }
-
         public async ValueTask<bool> TryHandleAsync(
             HttpContext httpContext,
             Exception exception,
             CancellationToken cancellationToken)
         {
-            _logger.LogError(
+            logger.LogError(
                 exception,
                 "Unhandled exception while processing {Path}. TraceId: {TraceId}",
                 httpContext.Request.Path,

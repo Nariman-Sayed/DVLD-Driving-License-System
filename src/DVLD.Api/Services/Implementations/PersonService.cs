@@ -5,16 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace DVLD.Api.Services.Implementations
 {
-    public partial class PersonService : IPersonService
+    internal sealed partial class PersonService(
+        IPersonRepository repository,
+        ILogger<PersonService> logger) : IPersonService
     {
-        private readonly IPersonRepository _repository;
-        private readonly ILogger<PersonService> _logger;
-
-        public PersonService(IPersonRepository repository, ILogger<PersonService> logger)
-        {
-            _repository = repository;
-            _logger = logger;
-        }
+        private readonly IPersonRepository _repository = repository;
+        private readonly ILogger<PersonService> _logger = logger;
 
         public async Task<List<PersonDto>> GetAllPeopleAsync()
         {

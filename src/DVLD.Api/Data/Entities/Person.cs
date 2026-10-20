@@ -1,6 +1,6 @@
 namespace DVLD.Api.Data.Entities
 {
-    public class Person
+    internal sealed class Person
     {
         public int PersonID { get; set; }
         public string NationalNo { get; set; } = string.Empty;

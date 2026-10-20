@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DVLD.Api.Data.Configurations
 {
-    public class PersonConfiguration : IEntityTypeConfiguration<Person>
+    internal sealed class PersonConfiguration : IEntityTypeConfiguration<Person>
     {
         public void Configure(EntityTypeBuilder<Person> builder)
         {

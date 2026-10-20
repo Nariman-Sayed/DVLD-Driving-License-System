@@ -5,13 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data
 {
-    public class ApplicationDbContext : DbContext, IApplicationDbContext
+    internal sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : DbContext(options), IApplicationDbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
-
         public DbSet<Person> People => Set<Person>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

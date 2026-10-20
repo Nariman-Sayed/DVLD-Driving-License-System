@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Extensions
 {
-    public static class PersistenceServiceExtensions
+    internal static class PersistenceServiceExtensions
     {
         public static IServiceCollection AddInfrastructurePersistenceServices(
             this IServiceCollection services,

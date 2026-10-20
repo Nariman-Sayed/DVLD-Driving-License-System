@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Interfaces
 {
-    public interface IApplicationDbContext
+    internal interface IApplicationDbContext
     {
         DbSet<Person> People { get; }
 

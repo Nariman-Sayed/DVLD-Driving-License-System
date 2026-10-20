@@ -2,7 +2,7 @@
 
 namespace DVLD.Api.Data.Interfaces
 {
-    public interface IPersonRepository
+    internal interface IPersonRepository
     {
         Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);

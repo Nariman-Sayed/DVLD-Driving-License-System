@@ -5,18 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
 {
-    public class PersonRepository : IPersonRepository
+    internal sealed class PersonRepository(IApplicationDbContext context) : IPersonRepository
     {
-        private readonly IApplicationDbContext _context;
-
-        public PersonRepository(IApplicationDbContext context)
-        {
-            _context = context;
-        }
-
         public async Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            var people = await _context.People
+            var people = await context.People
                 .AsNoTracking()
                 .OrderBy(p => p.FirstName)
                 .ToListAsync(cancellationToken);
@@ -26,7 +19,7 @@ namespace DVLD.Api.Data.Repositories
 
         public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            var person = await _context.People
+            var person = await context.People
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
 
@@ -36,14 +29,14 @@ namespace DVLD.Api.Data.Repositories
         public async Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
         {
             var entity = ToEntity(person);
-            _context.People.Add(entity);
-            await _context.SaveChangesAsync(cancellationToken);
+            context.People.Add(entity);
+            await context.SaveChangesAsync(cancellationToken);
             return entity.PersonID;
         }
 
         public async Task<bool> UpdateAsync(int id, PersonDto person, CancellationToken cancellationToken = default)
         {
-            var entity = await _context.People
+            var entity = await context.People
                 .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
 
             if (entity is null)
@@ -64,13 +57,13 @@ namespace DVLD.Api.Data.Repositories
             entity.NationalityCountryID = person.NationalityCountryID;
             entity.ImagePath = string.IsNullOrEmpty(person.ImagePath) ? null : person.ImagePath;
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            var entity = await _context.People
+            var entity = await context.People
                 .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
 
             if (entity is null)
@@ -78,8 +71,8 @@ namespace DVLD.Api.Data.Repositories
                 return false;
             }
 
-            _context.People.Remove(entity);
-            await _context.SaveChangesAsync(cancellationToken);
+            context.People.Remove(entity);
+            await context.SaveChangesAsync(cancellationToken);
             return true;
         }
 

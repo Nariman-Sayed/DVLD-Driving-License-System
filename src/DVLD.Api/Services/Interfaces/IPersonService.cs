@@ -2,6 +2,8 @@
 
 namespace DVLD.Api.Services.Interfaces
 {
+    // Public because PersonController is public (MVC discovery) and its constructor
+    // parameter types must be at least as accessible as the constructor (CS0051).
     public interface IPersonService
     {
         Task<List<PersonDto>> GetAllPeopleAsync();
