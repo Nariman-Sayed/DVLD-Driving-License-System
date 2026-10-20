@@ -18,7 +18,7 @@ namespace DVLD.Api.Middleware
             Exception exception,
             CancellationToken cancellationToken)
         {
-            bool isValidationException = exception is DVLD.Api.Exceptions.ApplicationValidationException;
+            bool isValidationException = exception.GetType().FullName == "DVLD.Api.Exceptions.ApplicationValidationException";
 
             if (isValidationException)
             {
