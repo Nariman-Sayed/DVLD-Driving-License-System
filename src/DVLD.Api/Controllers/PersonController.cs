@@ -1,6 +1,8 @@
+using DVLD.Api.Extensions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DVLD.Api.Controllers
 {
@@ -10,6 +12,7 @@ namespace DVLD.Api.Controllers
     // Must stay public: ASP.NET Core MVC only discovers public controller types.
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting(RateLimitingServiceExtensions.FixedWindowPolicy)]
     public sealed class PersonController(IPersonService personService) : ControllerBase
     {
         /// <summary>

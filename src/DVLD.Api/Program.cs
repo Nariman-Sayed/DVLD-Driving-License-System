@@ -20,6 +20,7 @@ namespace DVLD.Api
 
             builder.Services.AddApplicationServices();
             builder.Services.AddInfrastructurePersistenceServices(builder.Configuration);
+            builder.Services.AddApiRateLimiting(builder.Configuration);
 
             var app = builder.Build();
 
@@ -34,6 +35,7 @@ namespace DVLD.Api
             }
 
             app.UseHttpsRedirection();
+            app.UseRateLimiter();
             app.UseAuthorization();
             app.MapControllers();
 
