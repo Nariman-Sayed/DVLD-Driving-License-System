@@ -1,134 +1,125 @@
-﻿using DVLD.Api.Data.Interfaces;
+﻿using DVLD.Api.Data.Entities;
+using DVLD.Api.Data.Interfaces;
 using DVLD.Shared;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
 {
     public class PersonRepository : IPersonRepository
     {
-        private readonly string _connectionString;
+        private readonly IApplicationDbContext _context;
 
-        public PersonRepository(IConfiguration configuration)
+        public PersonRepository(IApplicationDbContext context)
         {
-            _connectionString = configuration.GetConnectionString("DVLDConnection")
-                ?? throw new InvalidOperationException("Connection string 'DVLDConnection' not found.");
+            _context = context;
         }
 
-        public async Task<List<PersonDto>> GetAllAsync()
+        public async Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            var people = new List<PersonDto>();
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM People ORDER BY FirstName";
-            using var command = new SqlCommand(query, connection);
+            var people = await _context.People
+                .AsNoTracking()
+                .OrderBy(p => p.FirstName)
+                .ToListAsync(cancellationToken);
 
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
+            return people.Select(ToDto).ToList();
+        }
 
-            while (await reader.ReadAsync())
+        public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var person = await _context.People
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
+
+            return person is null ? null : ToDto(person);
+        }
+
+        public async Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
+        {
+            var entity = ToEntity(person);
+            _context.People.Add(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+            return entity.PersonID;
+        }
+
+        public async Task<bool> UpdateAsync(int id, PersonDto person, CancellationToken cancellationToken = default)
+        {
+            var entity = await _context.People
+                .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
+
+            if (entity is null)
             {
-                people.Add(MapReaderToPersonDto(reader));
+                return false;
             }
-            return people;
+
+            entity.NationalNo = person.NationalNo;
+            entity.FirstName = person.FirstName;
+            entity.SecondName = person.SecondName;
+            entity.ThirdName = string.IsNullOrEmpty(person.ThirdName) ? null : person.ThirdName;
+            entity.LastName = person.LastName;
+            entity.DateOfBirth = person.DateOfBirth;
+            entity.Gendor = Convert.ToByte(person.Gendor);
+            entity.Address = person.Address;
+            entity.Phone = person.Phone;
+            entity.Email = string.IsNullOrEmpty(person.Email) ? null : person.Email;
+            entity.NationalityCountryID = person.NationalityCountryID;
+            entity.ImagePath = string.IsNullOrEmpty(person.ImagePath) ? null : person.ImagePath;
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
-        public async Task<PersonDto?> GetByIdAsync(int id)
+        public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM People WHERE PersonID = @PersonID";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@PersonID", id);
+            var entity = await _context.People
+                .FirstOrDefaultAsync(p => p.PersonID == id, cancellationToken);
 
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
+            if (entity is null)
+            {
+                return false;
+            }
 
-            return await reader.ReadAsync() ? MapReaderToPersonDto(reader) : null;
+            _context.People.Remove(entity);
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
-        public async Task<int> AddAsync(PersonDto person)
-        {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"INSERT INTO People (FirstName, SecondName, ThirdName, LastName, NationalNo,
-                                                   DateOfBirth, Gendor, Address, Phone, Email, NationalityCountryID, ImagePath)
-                             VALUES (@FirstName, @SecondName, @ThirdName, @LastName, @NationalNo,
-                                     @DateOfBirth, @Gendor, @Address, @Phone, @Email, @NationalityCountryID, @ImagePath);
-                             SELECT SCOPE_IDENTITY();";
-
-            using var command = new SqlCommand(query, connection);
-            AddPersonParameters(command, person);
-
-            await connection.OpenAsync();
-            var result = await command.ExecuteScalarAsync();
-            return Convert.ToInt32(result);
-        }
-
-        public async Task<bool> UpdateAsync(int id, PersonDto person)
-        {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"UPDATE People SET
-                                FirstName = @FirstName, SecondName = @SecondName, ThirdName = @ThirdName,
-                                LastName = @LastName, NationalNo = @NationalNo, DateOfBirth = @DateOfBirth,
-                                Gendor = @Gendor, Address = @Address, Phone = @Phone, Email = @Email,
-                                NationalityCountryID = @NationalityCountryID, ImagePath = @ImagePath
-                              WHERE PersonID = @PersonID";
-
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@PersonID", id);
-            AddPersonParameters(command, person);
-
-            await connection.OpenAsync();
-            int rowsAffected = await command.ExecuteNonQueryAsync();
-            return rowsAffected > 0;
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            using var connection = new SqlConnection(_connectionString);
-            string query = "DELETE FROM People WHERE PersonID = @PersonID";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@PersonID", id);
-
-            await connection.OpenAsync();
-            int rowsAffected = await command.ExecuteNonQueryAsync();
-            return rowsAffected > 0;
-        }
-
-        private static PersonDto MapReaderToPersonDto(SqlDataReader reader)
+        private static PersonDto ToDto(Person person)
         {
             return new PersonDto
             {
-                PersonID = (int)reader["PersonID"],
-                FirstName = (string)reader["FirstName"],
-                SecondName = (string)reader["SecondName"],
-                ThirdName = reader["ThirdName"] != DBNull.Value ? (string)reader["ThirdName"] : "",
-                LastName = (string)reader["LastName"],
-                NationalNo = (string)reader["NationalNo"],
-                DateOfBirth = (DateTime)reader["DateOfBirth"],
-                Gendor = (short)(byte)reader["Gendor"],
-                Address = (string)reader["Address"],
-                Phone = (string)reader["Phone"],
-                Email = reader["Email"] != DBNull.Value ? (string)reader["Email"] : "",
-                NationalityCountryID = (int)reader["NationalityCountryID"],
-                ImagePath = reader["ImagePath"] != DBNull.Value ? (string)reader["ImagePath"] : ""
+                PersonID = person.PersonID,
+                FirstName = person.FirstName,
+                SecondName = person.SecondName,
+                ThirdName = person.ThirdName ?? string.Empty,
+                LastName = person.LastName,
+                NationalNo = person.NationalNo,
+                DateOfBirth = person.DateOfBirth,
+                Gendor = person.Gendor,
+                Address = person.Address,
+                Phone = person.Phone,
+                Email = person.Email ?? string.Empty,
+                NationalityCountryID = person.NationalityCountryID,
+                ImagePath = person.ImagePath ?? string.Empty
             };
         }
 
-        private static void AddPersonParameters(SqlCommand command, PersonDto person)
+        private static Person ToEntity(PersonDto person)
         {
-            command.Parameters.AddWithValue("@FirstName", person.FirstName);
-            command.Parameters.AddWithValue("@SecondName", person.SecondName);
-            command.Parameters.AddWithValue("@ThirdName",
-                string.IsNullOrEmpty(person.ThirdName) ? DBNull.Value : person.ThirdName);
-            command.Parameters.AddWithValue("@LastName", person.LastName);
-            command.Parameters.AddWithValue("@NationalNo", person.NationalNo);
-            command.Parameters.AddWithValue("@DateOfBirth", person.DateOfBirth);
-            command.Parameters.AddWithValue("@Gendor", person.Gendor);
-            command.Parameters.AddWithValue("@Address", person.Address);
-            command.Parameters.AddWithValue("@Phone", person.Phone);
-            command.Parameters.AddWithValue("@Email",
-                string.IsNullOrEmpty(person.Email) ? DBNull.Value : person.Email);
-            command.Parameters.AddWithValue("@NationalityCountryID", person.NationalityCountryID);
-            command.Parameters.AddWithValue("@ImagePath",
-                string.IsNullOrEmpty(person.ImagePath) ? DBNull.Value : person.ImagePath);
+            return new Person
+            {
+                NationalNo = person.NationalNo,
+                FirstName = person.FirstName,
+                SecondName = person.SecondName,
+                ThirdName = string.IsNullOrEmpty(person.ThirdName) ? null : person.ThirdName,
+                LastName = person.LastName,
+                DateOfBirth = person.DateOfBirth,
+                Gendor = Convert.ToByte(person.Gendor),
+                Address = person.Address,
+                Phone = person.Phone,
+                Email = string.IsNullOrEmpty(person.Email) ? null : person.Email,
+                NationalityCountryID = person.NationalityCountryID,
+                ImagePath = string.IsNullOrEmpty(person.ImagePath) ? null : person.ImagePath
+            };
         }
     }
 }

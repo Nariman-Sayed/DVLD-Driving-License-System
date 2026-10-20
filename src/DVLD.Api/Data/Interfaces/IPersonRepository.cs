@@ -4,11 +4,10 @@ namespace DVLD.Api.Data.Interfaces
 {
     public interface IPersonRepository
     {
-        Task<List<PersonDto>> GetAllAsync();
-        Task<PersonDto?> GetByIdAsync(int id);
-        Task<int> AddAsync(PersonDto person);
-        Task<bool> UpdateAsync(int id, PersonDto person);
-        Task<bool> DeleteAsync(int id);
-
+        Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default);
+        Task<bool> UpdateAsync(int id, PersonDto person, CancellationToken cancellationToken = default);
+        Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
     }
 }
