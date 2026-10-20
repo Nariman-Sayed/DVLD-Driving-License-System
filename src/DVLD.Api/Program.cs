@@ -4,8 +4,15 @@ using Serilog;
 
 namespace DVLD.Api
 {
-    internal sealed class Program
+    /// <summary>
+    /// Application entry point.
+    /// </summary>
+    public sealed class Program
     {
+        /// <summary>
+        /// Configures and runs the application.
+        /// </summary>
+        /// <param name="args">Command line arguments.</param>
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
