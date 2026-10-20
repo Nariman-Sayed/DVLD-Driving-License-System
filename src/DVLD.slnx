@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DVLD.Api/DVLD.Api.csproj" />
+  <Project Path="DVLD.Desktop/DVLD.Desktop.csproj" />
+  <Project Path="DVLD.Shared/DVLD.Shared.csproj" />
+</Solution>

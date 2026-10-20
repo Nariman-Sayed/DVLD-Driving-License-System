@@ -1,0 +1,5 @@
+src/**/bin/
+src/**/obj/
+*.user
+.vs/
+src/DVLD.Api/Logs/
