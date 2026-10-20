@@ -9,12 +9,26 @@ namespace DVLD.Api.Data.Repositories
     {
         public async Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            var people = await context.People
+            return await context.People
                 .AsNoTracking()
                 .OrderBy(p => p.FirstName)
+                .Select(p => new PersonDto
+                {
+                    PersonID = p.PersonID,
+                    FirstName = p.FirstName,
+                    SecondName = p.SecondName,
+                    ThirdName = p.ThirdName ?? string.Empty,
+                    LastName = p.LastName,
+                    NationalNo = p.NationalNo,
+                    DateOfBirth = p.DateOfBirth,
+                    Gendor = p.Gendor,
+                    Address = p.Address,
+                    Phone = p.Phone,
+                    Email = p.Email ?? string.Empty,
+                    NationalityCountryID = p.NationalityCountryID,
+                    ImagePath = p.ImagePath ?? string.Empty
+                })
                 .ToListAsync(cancellationToken);
-
-            return people.Select(ToDto).ToList();
         }
 
         public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
