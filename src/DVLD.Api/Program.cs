@@ -14,14 +14,10 @@ namespace DVLD.Api
     {
         public static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .WriteTo.Console()
-                .WriteTo.File("Logs/dvld-api-.log", rollingInterval: RollingInterval.Day)
-                .CreateLogger();
-
             var builder = WebApplication.CreateBuilder(args);
-            builder.Host.UseSerilog();
+            builder.Host.UseSerilog((context, services, configuration) => configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services));
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -40,6 +36,7 @@ namespace DVLD.Api
             var app = builder.Build();
 
             app.UseExceptionHandler();
+            app.UseSerilogRequestLogging();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
