@@ -1,10 +1,4 @@
-using DVLD.Api.Data;
-using DVLD.Api.Data.Interfaces;
-using DVLD.Api.Data.Repositories;
-using DVLD.Api.Middleware;
-using DVLD.Api.Services.Implementations;
-using DVLD.Api.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using DVLD.Api.Extensions;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -24,14 +18,8 @@ namespace DVLD.Api
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
-            builder.Services.AddProblemDetails();
-            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-
-            builder.Services.AddDbContext<IApplicationDbContext, ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DVLDConnection")));
-
-            builder.Services.AddScoped<IPersonRepository, PersonRepository>();
-            builder.Services.AddScoped<IPersonService, PersonService>();
+            builder.Services.AddApplicationServices();
+            builder.Services.AddInfrastructurePersistenceServices(builder.Configuration);
 
             var app = builder.Build();
 
