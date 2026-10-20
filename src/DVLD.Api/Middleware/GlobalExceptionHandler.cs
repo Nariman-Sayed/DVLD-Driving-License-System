@@ -3,29 +3,66 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DVLD.Api.Middleware
 {
-    internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
+    /// <summary>
+    /// Global exception handler that maps exceptions to RFC 7807 <see cref="ProblemDetails"/> responses.
+    /// </summary>
+    /// <param name="logger">The logger used to record exceptions.</param>
+    /// <param name="environment">The hosting environment used to determine whether details are exposed.</param>
+    internal sealed class GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IHostEnvironment environment) : IExceptionHandler
     {
+        /// <inheritdoc />
         public async ValueTask<bool> TryHandleAsync(
             HttpContext httpContext,
             Exception exception,
             CancellationToken cancellationToken)
         {
-            logger.LogError(
-                exception,
-                "Unhandled exception while processing {Path}. TraceId: {TraceId}",
-                httpContext.Request.Path,
-                httpContext.TraceIdentifier);
+            bool isValidationException = exception is DVLD.Api.Exceptions.ApplicationValidationException;
+
+            if (isValidationException)
+            {
+                logger.LogWarning(
+                    exception,
+                    "Validation exception while processing {Path}. TraceId: {TraceId}",
+                    httpContext.Request.Path,
+                    httpContext.TraceIdentifier);
+            }
+            else
+            {
+                logger.LogError(
+                    exception,
+                    "Unhandled exception while processing {Path}. TraceId: {TraceId}",
+                    httpContext.Request.Path,
+                    httpContext.TraceIdentifier);
+            }
+
+            int statusCode = isValidationException
+                ? StatusCodes.Status400BadRequest
+                : StatusCodes.Status500InternalServerError;
 
             var problemDetails = new ProblemDetails
             {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An unexpected error occurred",
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+                Status = statusCode,
+                Title = isValidationException ? exception.Message : "An unexpected error occurred",
+                Type = isValidationException
+                    ? "https://tools.ietf.org/html/rfc9110#section-15.5.1"
+                    : "https://tools.ietf.org/html/rfc9110#section-15.6.1",
                 Instance = httpContext.Request.Path
             };
+
+            if (isValidationException)
+            {
+                problemDetails.Detail = exception.Message;
+            }
+            else if (environment.IsDevelopment())
+            {
+                problemDetails.Detail = exception.ToString();
+            }
+
             problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
 
-            httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            httpContext.Response.StatusCode = statusCode;
             await httpContext.Response.WriteAsJsonAsync(
                 problemDetails, (System.Text.Json.JsonSerializerOptions?)null, "application/problem+json", cancellationToken);
 
