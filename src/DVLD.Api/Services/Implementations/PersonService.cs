@@ -1,10 +1,11 @@
 ﻿using DVLD.Api.Data.Interfaces;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace DVLD.Api.Services.Implementations
 {
-    public class PersonService : IPersonService
+    public partial class PersonService : IPersonService
     {
         private readonly IPersonRepository _repository;
         private readonly ILogger<PersonService> _logger;
@@ -17,55 +18,70 @@ namespace DVLD.Api.Services.Implementations
 
         public async Task<List<PersonDto>> GetAllPeopleAsync()
         {
-            _logger.LogInformation("Fetching all people");
-            var people = await _repository.GetAllAsync();
-            _logger.LogInformation("Successfully retrieved {Count} people", people.Count);
-            return people;
+            return await _repository.GetAllAsync();
         }
 
         public async Task<PersonDto?> GetPersonByIdAsync(int id)
         {
-            _logger.LogInformation("Fetching person with ID: {PersonId}", id);
-            var person = await _repository.GetByIdAsync(id);
-
-            if (person is null)
-                _logger.LogWarning("Person with ID {PersonId} not found", id);
-
-            return person;
+            return await _repository.GetByIdAsync(id);
         }
 
         public async Task<PersonDto> AddNewPersonAsync(PersonDto person)
         {
-            _logger.LogInformation("Attempting to add new person with National No: {NationalNo}", person.NationalNo);
+            LogAttemptingToAddPerson(person.NationalNo);
             person.PersonID = await _repository.AddAsync(person);
-            _logger.LogInformation("Successfully added person with ID: {PersonId}", person.PersonID);
+            LogSuccessfullyAddedPerson(person.PersonID);
             return person;
         }
 
         public async Task<bool> UpdatePersonAsync(int id, PersonDto person)
         {
-            _logger.LogInformation("Attempting to update person with ID: {PersonId}", id);
+            LogAttemptingToUpdatePerson(id);
             var updated = await _repository.UpdateAsync(id, person);
 
             if (!updated)
-                _logger.LogWarning("Update failed: Person with ID {PersonId} not found", id);
+                LogPersonNotFoundForUpdate(id);
             else
-                _logger.LogInformation("Successfully updated person with ID: {PersonId}", id);
+                LogSuccessfullyUpdatedPerson(id);
 
             return updated;
         }
 
         public async Task<bool> DeletePersonAsync(int id)
         {
-            _logger.LogInformation("Attempting to delete person with ID: {PersonId}", id);
+            LogAttemptingToDeletePerson(id);
             var deleted = await _repository.DeleteAsync(id);
 
             if (!deleted)
-                _logger.LogWarning("Delete failed: Person with ID {PersonId} not found", id);
+                LogPersonNotFoundForDelete(id);
             else
-                _logger.LogInformation("Successfully deleted person with ID: {PersonId}", id);
+                LogSuccessfullyDeletedPerson(id);
 
             return deleted;
         }
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to add new person with National No: {NationalNo}")]
+        private partial void LogAttemptingToAddPerson(string nationalNo);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Successfully added person with ID: {PersonId}")]
+        private partial void LogSuccessfullyAddedPerson(int personId);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to update person with ID: {PersonId}")]
+        private partial void LogAttemptingToUpdatePerson(int personId);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Update failed: Person with ID {PersonId} not found")]
+        private partial void LogPersonNotFoundForUpdate(int personId);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Successfully updated person with ID: {PersonId}")]
+        private partial void LogSuccessfullyUpdatedPerson(int personId);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to delete person with ID: {PersonId}")]
+        private partial void LogAttemptingToDeletePerson(int personId);
+
+        [LoggerMessage(Level = LogLevel.Warning, Message = "Delete failed: Person with ID {PersonId} not found")]
+        private partial void LogPersonNotFoundForDelete(int personId);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Successfully deleted person with ID: {PersonId}")]
+        private partial void LogSuccessfullyDeletedPerson(int personId);
     }
 }
