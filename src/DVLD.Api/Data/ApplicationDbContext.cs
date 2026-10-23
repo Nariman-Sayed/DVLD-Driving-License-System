@@ -18,12 +18,18 @@ namespace DVLD.Api.Data
         public DbSet<Person> People => Set<Person>();
 
         /// <summary>
+        /// Gets the set of user accounts.
+        /// </summary>
+        public DbSet<User> Users => Set<User>();
+
+        /// <summary>
         /// Applies entity type configurations for the DVLD model.
         /// </summary>
         /// <param name="modelBuilder">The builder used to construct the model.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
+            modelBuilder.ApplyConfiguration(new UserConfiguration());
             base.OnModelCreating(modelBuilder);
         }
     }

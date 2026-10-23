@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DVLD.Desktop.Common;
 
-namespace DVLD
+namespace DVLD.Desktop
 {
     public partial class frmMain : Form
     {
@@ -127,8 +128,7 @@ namespace DVLD
         {
             try
             {
-                using var client = new HttpClient();
-                client.BaseAddress = new Uri("https://localhost:7226/");
+                using var client = ApiClientFactory.CreateAuthorizedClient();
 
                 var response = await client.GetAsync("api/person");
                 string content = await response.Content.ReadAsStringAsync();
@@ -147,7 +147,5 @@ namespace DVLD
                 MessageBox.Show($"Connection failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-         
     }
 }

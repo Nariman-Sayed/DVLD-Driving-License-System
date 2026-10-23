@@ -1,18 +1,20 @@
 using DVLD.Api.Extensions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace DVLD.Api.Controllers
 {
     /// <summary>
-    /// Endpoints for reading and managing people.
+    /// Endpoints for reading and managing people. All endpoints require a valid JWT.
     /// </summary>
     // Must stay public: ASP.NET Core MVC only discovers public controller types.
     [ApiController]
     [Route("api/[controller]")]
     [EnableRateLimiting(RateLimitingServiceExtensions.FixedWindowPolicy)]
+    [Authorize]
     public sealed class PersonController(IPersonService personService) : ControllerBase
     {
         /// <summary>
@@ -20,10 +22,12 @@ namespace DVLD.Api.Controllers
         /// </summary>
         /// <returns>All people; an empty array when none exist.</returns>
         /// <response code="200">The list of people was returned successfully.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // GET: api/person
         [HttpGet]
         [ProducesResponseType(typeof(List<PersonDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<List<PersonDto>>> GetAllPeople()
         {
@@ -37,11 +41,13 @@ namespace DVLD.Api.Controllers
         /// <param name="id">The person identifier.</param>
         /// <returns>The matching person.</returns>
         /// <response code="200">The person was found.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="404">No person exists with the given identifier.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // GET: api/person/5
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(PersonDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PersonDto>> GetPersonById(int id)
@@ -57,11 +63,13 @@ namespace DVLD.Api.Controllers
         /// <returns>The created person.</returns>
         /// <response code="201">The person was created; the Location header points to the new resource.</response>
         /// <response code="400">The request body failed validation.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // POST: api/person
         [HttpPost]
         [ProducesResponseType(typeof(PersonDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PersonDto>> AddNewPerson(PersonDto person)
         {
@@ -76,12 +84,14 @@ namespace DVLD.Api.Controllers
         /// <param name="person">The new values for the person.</param>
         /// <response code="204">The person was updated.</response>
         /// <response code="400">The request body failed validation.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="404">No person exists with the given identifier.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // PUT: api/person/5
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> UpdatePerson(int id, PersonDto person)
@@ -95,11 +105,13 @@ namespace DVLD.Api.Controllers
         /// </summary>
         /// <param name="id">The identifier of the person to delete.</param>
         /// <response code="204">The person was deleted.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="404">No person exists with the given identifier.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // DELETE: api/person/5
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> DeletePerson(int id)

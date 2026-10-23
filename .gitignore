@@ -3,3 +3,4 @@ src/**/obj/
 *.user
 .vs/
 src/DVLD.Api/Logs/
+/LEARNING_NOTES.md

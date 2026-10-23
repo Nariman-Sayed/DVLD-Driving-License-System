@@ -14,6 +14,8 @@ namespace DVLD.Api.Extensions
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddScoped<IPersonRepository, PersonRepository>();
             services.AddScoped<IPersonService, PersonService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuthService, AuthService>();
             return services;
         }
     }
