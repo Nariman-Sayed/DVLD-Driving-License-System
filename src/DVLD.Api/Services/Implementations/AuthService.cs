@@ -9,12 +9,21 @@ using System.Text;
 
 namespace DVLD.Api.Services.Implementations
 {
+    /// <summary>
+    /// Authenticates users against the stored password hashes and issues JWT tokens.
+    /// </summary>
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthService"/> class.
+        /// </summary>
+        /// <param name="userRepository">The user data access.</param>
+        /// <param name="configuration">The application configuration.</param>
+        /// <param name="logger">The logger.</param>
         public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
@@ -22,6 +31,11 @@ namespace DVLD.Api.Services.Implementations
             _logger = logger;
         }
 
+        /// <summary>
+        /// Validates credentials and issues a JWT token on success.
+        /// </summary>
+        /// <param name="request">The login credentials.</param>
+        /// <returns>The token and user details, or <see langword="null"/> when the credentials are invalid or the account is inactive.</returns>
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
         {
             _logger.LogInformation("Login attempt for username: {Username}", request.Username);

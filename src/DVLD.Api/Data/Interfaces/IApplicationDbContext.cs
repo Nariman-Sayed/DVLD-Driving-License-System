@@ -15,6 +15,11 @@ namespace DVLD.Api.Data.Interfaces
         DbSet<Person> People { get; }
 
         /// <summary>
+        /// Gets the set of user accounts.
+        /// </summary>
+        DbSet<User> Users { get; }
+
+        /// <summary>
         /// Persists all pending changes to the database.
         /// </summary>
         /// <param name="cancellationToken">A token to cancel the operation.</param>
