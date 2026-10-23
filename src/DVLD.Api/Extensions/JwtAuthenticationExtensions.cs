@@ -22,8 +22,15 @@ namespace DVLD.Api.Extensions
                 throw new InvalidOperationException("JWT key must be at least 32 bytes.");
             }
 
-            services.AddScoped<DVLD.Api.Data.Interfaces.IUserRepository, DVLD.Api.Data.Repositories.UserRepository>();
-            services.AddScoped<DVLD.Api.Services.Interfaces.IAuthService, DVLD.Api.Services.Implementations.AuthService>();
+            if (string.IsNullOrWhiteSpace(issuer))
+            {
+                throw new InvalidOperationException("JWT issuer is missing. Set Jwt:Issuer in configuration.");
+            }
+
+            if (string.IsNullOrWhiteSpace(audience))
+            {
+                throw new InvalidOperationException("JWT audience is missing. Set Jwt:Audience in configuration.");
+            }
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
