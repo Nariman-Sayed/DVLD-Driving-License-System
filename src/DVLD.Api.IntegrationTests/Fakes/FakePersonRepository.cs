@@ -25,25 +25,25 @@ namespace DVLD.Api.IntegrationTests.Fakes
             }
         };
 
-        public Task<List<PersonDto>> GetAllAsync()
+        public Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_people.ToList());
         }
 
-        public Task<PersonDto?> GetByIdAsync(int id)
+        public Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             var person = _people.FirstOrDefault(p => p.PersonID == id);
             return Task.FromResult(person);
         }
 
-        public Task<int> AddAsync(PersonDto person)
+        public Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
         {
             person.PersonID = _people.Count > 0 ? _people.Max(p => p.PersonID) + 1 : 1;
             _people.Add(person);
             return Task.FromResult(person.PersonID);
         }
 
-        public Task<bool> UpdateAsync(int id, PersonDto person)
+        public Task<bool> UpdateAsync(int id, PersonDto person, CancellationToken cancellationToken = default)
         {
             var existing = _people.FirstOrDefault(p => p.PersonID == id);
             if (existing is null) return Task.FromResult(false);
@@ -54,7 +54,7 @@ namespace DVLD.Api.IntegrationTests.Fakes
             return Task.FromResult(true);
         }
 
-        public Task<bool> DeleteAsync(int id)
+        public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
             var existing = _people.FirstOrDefault(p => p.PersonID == id);
             if (existing is null) return Task.FromResult(false);

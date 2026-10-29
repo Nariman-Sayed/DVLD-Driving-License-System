@@ -5,12 +5,21 @@ using DVLD.Shared;
 
 namespace DVLD.Api.Services.Implementations
 {
+    /// <summary>
+    /// Application service implementation for <see cref="BaseApplicationDto"/> records.
+    /// </summary>
     public class BaseApplicationService : IBaseApplicationService
     {
         private readonly IBaseApplicationRepository _repository;
         private readonly IApplicationTypeRepository _applicationTypeRepository;
         private readonly ILogger<BaseApplicationService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BaseApplicationService"/> class.
+        /// </summary>
+        /// <param name="repository">The base application repository.</param>
+        /// <param name="applicationTypeRepository">The application type repository.</param>
+        /// <param name="logger">The logger.</param>
         public BaseApplicationService(
             IBaseApplicationRepository repository,
             IApplicationTypeRepository applicationTypeRepository,
@@ -21,17 +30,20 @@ namespace DVLD.Api.Services.Implementations
             _logger = logger;
         }
 
+        /// <inheritdoc />
         public async Task<List<BaseApplicationDto>> GetAllApplicationsAsync()
         {
             _logger.LogInformation("Fetching all applications");
             return await _repository.GetAllAsync();
         }
 
+        /// <inheritdoc />
         public async Task<BaseApplicationDto?> GetApplicationByIdAsync(int id)
         {
             return await _repository.GetByIdAsync(id);
         }
 
+        /// <inheritdoc />
         public async Task<BaseApplicationDto> AddNewApplicationAsync(CreateBaseApplicationRequest request, int createdByUserId)
         {
             var activeApplicationId = await _repository.GetActiveApplicationIdAsync(
@@ -67,6 +79,7 @@ namespace DVLD.Api.Services.Implementations
             return application;
         }
 
+        /// <inheritdoc />
         // Deferred: enforce a New -> Cancelled/Completed state machine instead of
         // accepting a free-form status here (flagged for a later phase).
         public async Task<bool> UpdateApplicationAsync(int id, BaseApplicationDto application)

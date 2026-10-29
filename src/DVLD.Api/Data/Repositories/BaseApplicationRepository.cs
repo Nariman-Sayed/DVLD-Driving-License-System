@@ -4,16 +4,24 @@ using Microsoft.Data.SqlClient;
 
 namespace DVLD.Api.Data.Repositories
 {
+    /// <summary>
+    /// ADO.NET repository for <see cref="BaseApplicationDto"/> records.
+    /// </summary>
     public class BaseApplicationRepository : IBaseApplicationRepository
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BaseApplicationRepository"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration.</param>
         public BaseApplicationRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DVLDConnection")
                 ?? throw new InvalidOperationException("Connection string 'DVLDConnection' not found.");
         }
 
+        /// <inheritdoc />
         public async Task<List<BaseApplicationDto>> GetAllAsync()
         {
             var applications = new List<BaseApplicationDto>();
@@ -31,6 +39,7 @@ namespace DVLD.Api.Data.Repositories
             return applications;
         }
 
+        /// <inheritdoc />
         public async Task<BaseApplicationDto?> GetByIdAsync(int id)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -44,6 +53,7 @@ namespace DVLD.Api.Data.Repositories
             return await reader.ReadAsync() ? MapReaderToDto(reader) : null;
         }
 
+        /// <inheritdoc />
         public async Task<int> AddAsync(BaseApplicationDto application)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -69,6 +79,7 @@ namespace DVLD.Api.Data.Repositories
             return Convert.ToInt32(result);
         }
 
+        /// <inheritdoc />
         public async Task<bool> UpdateAsync(int id, BaseApplicationDto application)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -97,6 +108,7 @@ namespace DVLD.Api.Data.Repositories
             return rowsAffected > 0;
         }
 
+        /// <inheritdoc />
         public async Task<int?> GetActiveApplicationIdAsync(int applicantPersonId, int applicationTypeId)
         {
             // Mirrors the course check (ApplicationStatus = 1 is "New"/active).

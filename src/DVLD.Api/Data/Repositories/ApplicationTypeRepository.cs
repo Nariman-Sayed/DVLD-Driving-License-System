@@ -4,16 +4,24 @@ using Microsoft.Data.SqlClient;
 
 namespace DVLD.Api.Data.Repositories
 {
+    /// <summary>
+    /// ADO.NET repository for <see cref="ApplicationTypeDto"/> records.
+    /// </summary>
     public class ApplicationTypeRepository : IApplicationTypeRepository
     {
         private readonly string _connectionString;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ApplicationTypeRepository"/> class.
+        /// </summary>
+        /// <param name="configuration">The application configuration.</param>
         public ApplicationTypeRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DVLDConnection")
                 ?? throw new InvalidOperationException("Connection string 'DVLDConnection' not found.");
         }
 
+        /// <inheritdoc />
         public async Task<List<ApplicationTypeDto>> GetAllAsync()
         {
             var types = new List<ApplicationTypeDto>();
@@ -31,6 +39,7 @@ namespace DVLD.Api.Data.Repositories
             return types;
         }
 
+        /// <inheritdoc />
         public async Task<ApplicationTypeDto?> GetByIdAsync(int id)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -44,6 +53,7 @@ namespace DVLD.Api.Data.Repositories
             return await reader.ReadAsync() ? MapReaderToDto(reader) : null;
         }
 
+        /// <inheritdoc />
         public async Task<int> AddAsync(ApplicationTypeDto type)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -60,6 +70,7 @@ namespace DVLD.Api.Data.Repositories
             return Convert.ToInt32(result);
         }
 
+        /// <inheritdoc />
         public async Task<bool> UpdateAsync(int id, ApplicationTypeDto type)
         {
             using var connection = new SqlConnection(_connectionString);
