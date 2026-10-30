@@ -1,3 +1,4 @@
+using DVLD.Api.Constants;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -82,7 +83,7 @@ namespace DVLD.Api.Controllers
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdValue, out var userId))
             {
-                return Unauthorized("Authenticated user id claim is missing or invalid.");
+                return Unauthorized(ApiErrorMessages.MissingAuthenticatedUserId);
             }
 
             var created = await _service.AddNewApplicationAsync(request, userId);

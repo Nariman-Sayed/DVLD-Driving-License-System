@@ -1,4 +1,5 @@
-﻿using DVLD.Api.Services.Interfaces;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,7 @@ namespace DVLD.Api.Controllers
             if (result is null)
             {
                 _logger.LogWarning("Login endpoint: invalid credentials for username {Username}", request.Username);
-                return Unauthorized(new { message = "Invalid username or password." });
+                return Unauthorized(new { message = ApiErrorMessages.InvalidCredentials });
             }
 
             return Ok(result);
