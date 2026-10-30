@@ -1,106 +1,66 @@
+using DVLD.Api.Data.Entities;
 using DVLD.Api.Data.Interfaces;
 using DVLD.Shared;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
 {
-    /// <summary>
-    /// ADO.NET repository for <see cref="TestTypeDto"/> records.
-    /// </summary>
-    public class TestTypeRepository : ITestTypeRepository
+    internal sealed class TestTypeRepository(IApplicationDbContext context) : ITestTypeRepository
     {
-        private readonly string _connectionString;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TestTypeRepository"/> class.
-        /// </summary>
-        /// <param name="configuration">The application configuration.</param>
-        public TestTypeRepository(IConfiguration configuration)
-        {
-            _connectionString = configuration.GetConnectionString("DVLDConnection")
-                ?? throw new InvalidOperationException("Connection string 'DVLDConnection' not found.");
-        }
-
-        /// <inheritdoc />
         public async Task<List<TestTypeDto>> GetAllAsync()
         {
-            var types = new List<TestTypeDto>();
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM TestTypes ORDER BY TestTypeID";
-            using var command = new SqlCommand(query, connection);
-
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                types.Add(MapReaderToDto(reader));
-            }
-            return types;
+            return await context.TestTypes
+                .AsNoTracking()
+                .OrderBy(t => t.TestTypeID)
+                .Select(t => new TestTypeDto
+                {
+                    TestTypeID = t.TestTypeID,
+                    TestTypeTitle = t.TestTypeTitle,
+                    TestTypeDescription = t.TestTypeDescription,
+                    TestTypeFees = t.TestTypeFees
+                })
+                .ToListAsync();
         }
 
-        /// <inheritdoc />
         public async Task<TestTypeDto?> GetByIdAsync(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM TestTypes WHERE TestTypeID = @TestTypeID";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@TestTypeID", id);
-
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-
-            return await reader.ReadAsync() ? MapReaderToDto(reader) : null;
+            return await context.TestTypes
+                .AsNoTracking()
+                .Where(t => t.TestTypeID == id)
+                .Select(t => new TestTypeDto
+                {
+                    TestTypeID = t.TestTypeID,
+                    TestTypeTitle = t.TestTypeTitle,
+                    TestTypeDescription = t.TestTypeDescription,
+                    TestTypeFees = t.TestTypeFees
+                })
+                .FirstOrDefaultAsync();
         }
 
-        /// <inheritdoc />
         public async Task<int> AddAsync(TestTypeDto type)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"INSERT INTO TestTypes (TestTypeTitle, TestTypeDescription, TestTypeFees)
-                             VALUES (@TestTypeTitle, @TestTypeDescription, @TestTypeFees);
-                             SELECT SCOPE_IDENTITY();";
+            var entity = new TestType
+            {
+                TestTypeTitle = type.TestTypeTitle,
+                TestTypeDescription = type.TestTypeDescription,
+                TestTypeFees = type.TestTypeFees
+            };
 
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@TestTypeTitle", type.TestTypeTitle);
-            command.Parameters.AddWithValue("@TestTypeDescription", type.TestTypeDescription);
-            command.Parameters.AddWithValue("@TestTypeFees", type.TestTypeFees);
-
-            await connection.OpenAsync();
-            var result = await command.ExecuteScalarAsync();
-            return Convert.ToInt32(result);
+            context.TestTypes.Add(entity);
+            await context.SaveChangesAsync();
+            return entity.TestTypeID;
         }
 
-        /// <inheritdoc />
         public async Task<bool> UpdateAsync(int id, TestTypeDto type)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"UPDATE TestTypes
-                             SET TestTypeTitle = @TestTypeTitle,
-                                 TestTypeDescription = @TestTypeDescription,
-                                 TestTypeFees = @TestTypeFees
-                             WHERE TestTypeID = @TestTypeID";
+            var rowsAffected = await context.TestTypes
+                .Where(t => t.TestTypeID == id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(t => t.TestTypeTitle, type.TestTypeTitle)
+                    .SetProperty(t => t.TestTypeDescription, type.TestTypeDescription)
+                    .SetProperty(t => t.TestTypeFees, type.TestTypeFees));
 
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@TestTypeID", id);
-            command.Parameters.AddWithValue("@TestTypeTitle", type.TestTypeTitle);
-            command.Parameters.AddWithValue("@TestTypeDescription", type.TestTypeDescription);
-            command.Parameters.AddWithValue("@TestTypeFees", type.TestTypeFees);
-
-            await connection.OpenAsync();
-            int rowsAffected = await command.ExecuteNonQueryAsync();
             return rowsAffected > 0;
-        }
-
-        private static TestTypeDto MapReaderToDto(SqlDataReader reader)
-        {
-            return new TestTypeDto
-            {
-                TestTypeID = (int)reader["TestTypeID"],
-                TestTypeTitle = (string)reader["TestTypeTitle"],
-                TestTypeDescription = (string)reader["TestTypeDescription"],
-                TestTypeFees = (decimal)reader["TestTypeFees"]
-            };
         }
     }
 }

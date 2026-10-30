@@ -23,6 +23,21 @@ namespace DVLD.Api.Data
         public DbSet<User> Users => Set<User>();
 
         /// <summary>
+        /// Gets the set of application types.
+        /// </summary>
+        public DbSet<ApplicationType> ApplicationTypes => Set<ApplicationType>();
+
+        /// <summary>
+        /// Gets the set of test types.
+        /// </summary>
+        public DbSet<TestType> TestTypes => Set<TestType>();
+
+        /// <summary>
+        /// Gets the set of applications.
+        /// </summary>
+        public DbSet<Application> Applications => Set<Application>();
+
+        /// <summary>
         /// Applies entity type configurations for the DVLD model.
         /// </summary>
         /// <param name="modelBuilder">The builder used to construct the model.</param>
@@ -30,6 +45,9 @@ namespace DVLD.Api.Data
         {
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
+            modelBuilder.ApplyConfiguration(new ApplicationTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new TestTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new ApplicationConfiguration());
             base.OnModelCreating(modelBuilder);
         }
     }

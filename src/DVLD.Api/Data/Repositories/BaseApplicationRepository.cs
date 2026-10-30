@@ -1,145 +1,93 @@
+using DVLD.Api.Data.Entities;
 using DVLD.Api.Data.Interfaces;
 using DVLD.Shared;
-using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
 {
-    /// <summary>
-    /// ADO.NET repository for <see cref="BaseApplicationDto"/> records.
-    /// </summary>
-    public class BaseApplicationRepository : IBaseApplicationRepository
+    internal sealed class BaseApplicationRepository(IApplicationDbContext context) : IBaseApplicationRepository
     {
-        private readonly string _connectionString;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BaseApplicationRepository"/> class.
-        /// </summary>
-        /// <param name="configuration">The application configuration.</param>
-        public BaseApplicationRepository(IConfiguration configuration)
-        {
-            _connectionString = configuration.GetConnectionString("DVLDConnection")
-                ?? throw new InvalidOperationException("Connection string 'DVLDConnection' not found.");
-        }
-
-        /// <inheritdoc />
         public async Task<List<BaseApplicationDto>> GetAllAsync()
         {
-            var applications = new List<BaseApplicationDto>();
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM Applications ORDER BY ApplicationDate DESC";
-            using var command = new SqlCommand(query, connection);
-
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                applications.Add(MapReaderToDto(reader));
-            }
-            return applications;
+            return await context.Applications
+                .AsNoTracking()
+                .OrderByDescending(a => a.ApplicationDate)
+                .Select(a => new BaseApplicationDto
+                {
+                    ApplicationID = a.ApplicationID,
+                    ApplicantPersonID = a.ApplicantPersonID,
+                    ApplicationDate = a.ApplicationDate,
+                    ApplicationTypeID = a.ApplicationTypeID,
+                    ApplicationStatus = a.ApplicationStatus,
+                    LastStatusDate = a.LastStatusDate,
+                    PaidFees = a.PaidFees,
+                    CreatedByUserID = a.CreatedByUserID
+                })
+                .ToListAsync();
         }
 
-        /// <inheritdoc />
         public async Task<BaseApplicationDto?> GetByIdAsync(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = "SELECT * FROM Applications WHERE ApplicationID = @ApplicationID";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ApplicationID", id);
-
-            await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-
-            return await reader.ReadAsync() ? MapReaderToDto(reader) : null;
+            return await context.Applications
+                .AsNoTracking()
+                .Where(a => a.ApplicationID == id)
+                .Select(a => new BaseApplicationDto
+                {
+                    ApplicationID = a.ApplicationID,
+                    ApplicantPersonID = a.ApplicantPersonID,
+                    ApplicationDate = a.ApplicationDate,
+                    ApplicationTypeID = a.ApplicationTypeID,
+                    ApplicationStatus = a.ApplicationStatus,
+                    LastStatusDate = a.LastStatusDate,
+                    PaidFees = a.PaidFees,
+                    CreatedByUserID = a.CreatedByUserID
+                })
+                .FirstOrDefaultAsync();
         }
 
-        /// <inheritdoc />
         public async Task<int> AddAsync(BaseApplicationDto application)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"INSERT INTO Applications
-                             (ApplicantPersonID, ApplicationDate, ApplicationTypeID,
-                              ApplicationStatus, LastStatusDate, PaidFees, CreatedByUserID)
-                             VALUES
-                             (@ApplicantPersonID, @ApplicationDate, @ApplicationTypeID,
-                              @ApplicationStatus, @LastStatusDate, @PaidFees, @CreatedByUserID);
-                             SELECT SCOPE_IDENTITY();";
+            var entity = new Application
+            {
+                ApplicantPersonID = application.ApplicantPersonID,
+                ApplicationDate = application.ApplicationDate,
+                ApplicationTypeID = application.ApplicationTypeID,
+                ApplicationStatus = application.ApplicationStatus,
+                LastStatusDate = application.LastStatusDate,
+                PaidFees = application.PaidFees,
+                CreatedByUserID = application.CreatedByUserID
+            };
 
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ApplicantPersonID", application.ApplicantPersonID);
-            command.Parameters.AddWithValue("@ApplicationDate", application.ApplicationDate);
-            command.Parameters.AddWithValue("@ApplicationTypeID", application.ApplicationTypeID);
-            command.Parameters.AddWithValue("@ApplicationStatus", application.ApplicationStatus);
-            command.Parameters.AddWithValue("@LastStatusDate", application.LastStatusDate);
-            command.Parameters.AddWithValue("@PaidFees", application.PaidFees);
-            command.Parameters.AddWithValue("@CreatedByUserID", application.CreatedByUserID);
-
-            await connection.OpenAsync();
-            var result = await command.ExecuteScalarAsync();
-            return Convert.ToInt32(result);
+            context.Applications.Add(entity);
+            await context.SaveChangesAsync();
+            return entity.ApplicationID;
         }
 
-        /// <inheritdoc />
         public async Task<bool> UpdateAsync(int id, BaseApplicationDto application)
         {
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"UPDATE Applications
-                             SET ApplicantPersonID = @ApplicantPersonID,
-                                 ApplicationDate = @ApplicationDate,
-                                 ApplicationTypeID = @ApplicationTypeID,
-                                 ApplicationStatus = @ApplicationStatus,
-                                 LastStatusDate = @LastStatusDate,
-                                 PaidFees = @PaidFees,
-                                 CreatedByUserID = @CreatedByUserID
-                             WHERE ApplicationID = @ApplicationID";
+            var rowsAffected = await context.Applications
+                .Where(a => a.ApplicationID == id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(a => a.ApplicantPersonID, application.ApplicantPersonID)
+                    .SetProperty(a => a.ApplicationDate, application.ApplicationDate)
+                    .SetProperty(a => a.ApplicationTypeID, application.ApplicationTypeID)
+                    .SetProperty(a => a.ApplicationStatus, application.ApplicationStatus)
+                    .SetProperty(a => a.LastStatusDate, application.LastStatusDate)
+                    .SetProperty(a => a.PaidFees, application.PaidFees)
+                    .SetProperty(a => a.CreatedByUserID, application.CreatedByUserID));
 
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ApplicationID", id);
-            command.Parameters.AddWithValue("@ApplicantPersonID", application.ApplicantPersonID);
-            command.Parameters.AddWithValue("@ApplicationDate", application.ApplicationDate);
-            command.Parameters.AddWithValue("@ApplicationTypeID", application.ApplicationTypeID);
-            command.Parameters.AddWithValue("@ApplicationStatus", application.ApplicationStatus);
-            command.Parameters.AddWithValue("@LastStatusDate", application.LastStatusDate);
-            command.Parameters.AddWithValue("@PaidFees", application.PaidFees);
-            command.Parameters.AddWithValue("@CreatedByUserID", application.CreatedByUserID);
-
-            await connection.OpenAsync();
-            int rowsAffected = await command.ExecuteNonQueryAsync();
             return rowsAffected > 0;
         }
 
-        /// <inheritdoc />
         public async Task<int?> GetActiveApplicationIdAsync(int applicantPersonId, int applicationTypeId)
         {
-            // Mirrors the course check (ApplicationStatus = 1 is "New"/active).
-            using var connection = new SqlConnection(_connectionString);
-            string query = @"SELECT TOP 1 ApplicationID
-                             FROM Applications
-                             WHERE ApplicantPersonID = @ApplicantPersonID
-                               AND ApplicationTypeID = @ApplicationTypeID
-                               AND ApplicationStatus = 1";
-            using var command = new SqlCommand(query, connection);
-            command.Parameters.AddWithValue("@ApplicantPersonID", applicantPersonId);
-            command.Parameters.AddWithValue("@ApplicationTypeID", applicationTypeId);
-
-            await connection.OpenAsync();
-            var result = await command.ExecuteScalarAsync();
-            return result is null || result == DBNull.Value ? null : Convert.ToInt32(result);
-        }
-
-        private static BaseApplicationDto MapReaderToDto(SqlDataReader reader)
-        {
-            return new BaseApplicationDto
-            {
-                ApplicationID = (int)reader["ApplicationID"],
-                ApplicantPersonID = (int)reader["ApplicantPersonID"],
-                ApplicationDate = (DateTime)reader["ApplicationDate"],
-                ApplicationTypeID = (int)reader["ApplicationTypeID"],
-                ApplicationStatus = (byte)reader["ApplicationStatus"],
-                LastStatusDate = (DateTime)reader["LastStatusDate"],
-                PaidFees = (decimal)reader["PaidFees"],
-                CreatedByUserID = (int)reader["CreatedByUserID"]
-            };
+            return await context.Applications
+                .AsNoTracking()
+                .Where(a => a.ApplicantPersonID == applicantPersonId
+                    && a.ApplicationTypeID == applicationTypeId
+                    && a.ApplicationStatus == 1)
+                .Select(a => (int?)a.ApplicationID)
+                .FirstOrDefaultAsync();
         }
     }
 }
