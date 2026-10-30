@@ -34,6 +34,9 @@ namespace DVLD.Api.Controllers
         /// <response code="400">The request body failed validation.</response>
         /// <response code="401">Invalid username or password.</response>
         [HttpPost("login")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto request)
         {
             if (!ModelState.IsValid)
