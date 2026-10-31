@@ -1,3 +1,4 @@
+using DVLD.Api.Constants;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,10 +45,10 @@ namespace DVLD.Api.Middleware
             var problemDetails = new ProblemDetails
             {
                 Status = statusCode,
-                Title = isValidationException ? exception.Message : "An unexpected error occurred",
+                Title = isValidationException ? exception.Message : ApiErrorMessages.UnexpectedError,
                 Type = isValidationException
-                    ? "https://tools.ietf.org/html/rfc9110#section-15.5.1"
-                    : "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+                    ? ApiErrorMessages.ValidationProblemType
+                    : ApiErrorMessages.ServerErrorProblemType,
                 Instance = httpContext.Request.Path
             };
 

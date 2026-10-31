@@ -23,7 +23,13 @@ namespace DVLD.Desktop.Properties {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
-        internal static Image newpic;
+        internal static System.Drawing.Bitmap newpic {
+            get {
+                object obj = ResourceManager.GetObject("newpic", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;

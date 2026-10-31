@@ -14,6 +14,14 @@ namespace DVLD.Api.Extensions
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddScoped<IPersonRepository, PersonRepository>();
             services.AddScoped<IPersonService, PersonService>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IApplicationTypeRepository, ApplicationTypeRepository>();
+            services.AddScoped<IApplicationTypeService, ApplicationTypeService>();
+            services.AddScoped<ITestTypeRepository, TestTypeRepository>();
+            services.AddScoped<ITestTypeService, TestTypeService>();
+            services.AddScoped<IBaseApplicationRepository, BaseApplicationRepository>();
+            services.AddScoped<IBaseApplicationService, BaseApplicationService>();
             return services;
         }
     }

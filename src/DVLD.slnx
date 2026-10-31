@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="DVLD.Api.IntegrationTests/DVLD.Api.IntegrationTests.csproj" Id="c92d81dd-31bb-404d-9a0d-560efcc69fe5" />
   <Project Path="DVLD.Api/DVLD.Api.csproj" />
   <Project Path="DVLD.Desktop/DVLD.Desktop.csproj" />
   <Project Path="DVLD.Shared/DVLD.Shared.csproj" />

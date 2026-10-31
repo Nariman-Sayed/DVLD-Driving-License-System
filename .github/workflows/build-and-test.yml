@@ -1,0 +1,36 @@
+name: build-and-test
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore src/DVLD.slnx
+
+      - name: Build (Release)
+        run: dotnet build src/DVLD.slnx -c Release --no-restore
+
+      - name: Test (Release, no rebuild)
+        run: dotnet test src/DVLD.slnx -c Release --no-build --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: ./coverage/**/coverage.cobertura.xml
