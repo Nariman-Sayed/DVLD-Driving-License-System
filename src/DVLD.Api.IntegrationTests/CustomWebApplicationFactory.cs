@@ -77,6 +77,17 @@ namespace DVLD.Api.IntegrationTests
 
                 services.AddScoped<IBaseApplicationRepository, FakeBaseApplicationRepository>();
 
+                // Same swap for the user repository so auth tests never touch the database.
+                var userDescriptor = services.SingleOrDefault(
+                    d => d.ServiceType == typeof(IUserRepository));
+
+                if (userDescriptor is not null)
+                {
+                    services.Remove(userDescriptor);
+                }
+
+                services.AddScoped<IUserRepository, FakeUserRepository>();
+
                 // Register the fixed test identity as the default authentication scheme,
                 // overriding the JWT flow from Program.cs so [Authorize] endpoints pass
                 // without issuing real tokens.
