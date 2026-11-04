@@ -19,13 +19,19 @@ namespace DVLD.Api.IntegrationTests
             builder.UseSetting("Jwt:Issuer", "DVLD.Api");
             builder.UseSetting("Jwt:Audience", "DVLD.Desktop");
 
+            // Keep the shared host well above the number of login calls made by the
+            // behaviour tests. The dedicated rate-limit factory lowers this again.
+            builder.UseSetting("RateLimiting:LoginPermitLimit", "1000");
+
             builder.ConfigureAppConfiguration((context, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Jwt:Key"] = "integration-test-only-fake-jwt-signing-key-not-for-production-use-0123456789",
                     ["Jwt:Issuer"] = "DVLD.Api",
-                    ["Jwt:Audience"] = "DVLD.Desktop"
+                    ["Jwt:Audience"] = "DVLD.Desktop",
+                    ["RateLimiting:LoginPermitLimit"] = "1000",
+                    ["RateLimiting:LoginWindowSeconds"] = "60"
                 });
             });
 

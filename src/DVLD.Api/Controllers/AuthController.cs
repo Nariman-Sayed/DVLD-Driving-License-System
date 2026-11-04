@@ -1,7 +1,9 @@
 ﻿using DVLD.Api.Constants;
+using DVLD.Api.Extensions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DVLD.Api.Controllers
 {
@@ -35,6 +37,7 @@ namespace DVLD.Api.Controllers
         /// <response code="400">The request body failed validation.</response>
         /// <response code="401">Invalid username or password.</response>
         [HttpPost("login")]
+        [EnableRateLimiting(RateLimitingServiceExtensions.AuthLoginPolicy)]
         [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
