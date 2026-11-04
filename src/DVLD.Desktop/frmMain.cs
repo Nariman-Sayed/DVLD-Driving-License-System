@@ -1,15 +1,42 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using DVLD.Desktop.Common;
+using DVLD.Desktop.Services;
 
 namespace DVLD.Desktop
 {
     public partial class frmMain : Form
     {
+        private bool _closingForUnauthorized;
+
         public frmMain()
         {
             InitializeComponent();
+            ApiClient.Instance.Unauthorized += ApiClient_Unauthorized;
+            FormClosed += FrmMain_FormClosed;
+        }
+
+        private void FrmMain_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            ApiClient.Instance.Unauthorized -= ApiClient_Unauthorized;
+        }
+
+        private void ApiClient_Unauthorized(object? sender, EventArgs e)
+        {
+            if (_closingForUnauthorized)
+            {
+                return;
+            }
+
+            _closingForUnauthorized = true;
+
+            MessageBox.Show(
+                "Your session has expired. Please sign in again.",
+                "Session Expired",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+
+            Close();
         }
 
         private void localLicenseToolStripMenuItem_Click(object sender, EventArgs e)
@@ -126,25 +153,37 @@ namespace DVLD.Desktop
 
         private async void btnTestApi_Click(object sender, EventArgs e)
         {
+            if (!btnTestApi.Enabled)
+            {
+                return;
+            }
+
+            btnTestApi.Enabled = false;
+
             try
             {
-                using var client = ApiClientFactory.CreateAuthorizedClient();
+                string content = await ApiClient.Instance.GetStringAsync("api/person");
 
-                var response = await client.GetAsync("api/person");
-                string content = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
+                MessageBox.Show($"Success!\n\n{content}", "API Test", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (ApiException ex)
+            {
+                // A 401 is already handled by ApiClient_Unauthorized, which closes this form.
+                if (!ex.IsUnauthorized)
                 {
-                    MessageBox.Show($"Success!\n\n{content}", "API Test", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show($"Status: {response.StatusCode}\n\nDetails:\n{content}", "API Test Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(ex.Message, "API Test Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Connection failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Unexpected error: {ex.Message}", "API Test Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (!IsDisposed)
+                {
+                    btnTestApi.Enabled = true;
+                }
             }
         }
     }
