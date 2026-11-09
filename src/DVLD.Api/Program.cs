@@ -27,7 +27,7 @@ namespace DVLD.Api
 
             builder.Services.AddApplicationServices();
             builder.Services.AddInfrastructurePersistenceServices(builder.Configuration);
-            builder.Services.AddApiRateLimiting(builder.Configuration);
+            builder.Services.AddApiRateLimiting();
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
             var app = builder.Build();
@@ -43,6 +43,7 @@ namespace DVLD.Api
             }
 
             app.UseHttpsRedirection();
+            app.UseRouting();
             app.UseRateLimiter();
             app.UseAuthentication();
             app.UseAuthorization();

@@ -24,5 +24,17 @@ namespace DVLD.Api.Options
         /// </summary>
         [Range(0, int.MaxValue)]
         public int QueueLimit { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the stricter permit limit for the login endpoint.
+        /// </summary>
+        [Range(1, int.MaxValue)]
+        public int LoginPermitLimit { get; set; } = 5;
+
+        /// <summary>
+        /// Gets or sets the login rate limit window size in seconds.
+        /// </summary>
+        [Range(1, int.MaxValue)]
+        public int LoginWindowSeconds { get; set; } = 60;
     }
 }

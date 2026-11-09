@@ -14,8 +14,8 @@ namespace DVLD.Api.Data.Configurations
             builder.Property(u => u.UserID).ValueGeneratedOnAdd();
 
             builder.Property(u => u.PersonID).IsRequired();
-            builder.Property(u => u.Username).HasColumnName("UserName").IsRequired();
-            builder.Property(u => u.Password).IsRequired();
+            builder.Property(u => u.Username).HasColumnName("UserName").HasMaxLength(20).IsRequired();
+            builder.Property(u => u.Password).HasMaxLength(255).IsUnicode(false).IsRequired();
             builder.Property(u => u.IsActive).IsRequired();
         }
     }

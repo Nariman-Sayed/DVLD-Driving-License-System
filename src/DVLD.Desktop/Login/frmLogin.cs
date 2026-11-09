@@ -1,8 +1,6 @@
-﻿using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 using DVLD.Desktop.Common;
+using DVLD.Desktop.Services;
 using DVLD.Shared;
 
 namespace DVLD.Desktop.Login
@@ -21,50 +19,74 @@ namespace DVLD.Desktop.Login
 
         private async void btnLogin_Click(object sender, EventArgs e)
         {
+            if (!btnLogin.Enabled)
+            {
+                return;
+            }
+
+            btnLogin.Enabled = false;
+
             try
             {
                 string username = txtUserName.Text.Trim();
                 string password = txtPassword.Text.Trim();
 
-                using var client = new HttpClient();
-                client.BaseAddress = new Uri(ApiSettings.BaseUrl);
-
                 var request = new LoginRequestDto { Username = username, Password = password };
-                var response = await client.PostAsJsonAsync("api/auth/login", request);
+                var loginResult = await ApiClient.Instance.PostAsync<LoginRequestDto, LoginResponseDto>(
+                    "api/auth/login",
+                    request);
 
-                if (response.IsSuccessStatusCode)
+                if (loginResult is null)
                 {
-                    var loginResult = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
-                    if (loginResult is null)
-                    {
-                        throw new InvalidOperationException("Login succeeded but the server returned an empty response body.");
-                    }
-
-                    SessionManager.Token = loginResult.Token;
-                    SessionManager.UserID = loginResult.UserID;
-                    SessionManager.Username = loginResult.Username;
-
-                    SaveRememberedUsername(username);
-
-                    frmMain mainForm = new frmMain();
-                    this.Hide();
-                    mainForm.ShowDialog();
-                    this.Close();
+                    MessageBox.Show(
+                        "Login succeeded but the server returned an empty response body.",
+                        "Login Failed",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
                 }
-                else if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    MessageBox.Show("Invalid Username/Password.", "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else
-                {
-                    string details = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Login failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}. Body: {details}");
-                    MessageBox.Show($"Login failed. Status: {(int)response.StatusCode} {response.ReasonPhrase}", "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+
+                SessionManager.Token = loginResult.Token;
+                SessionManager.UserID = loginResult.UserID;
+                SessionManager.Username = loginResult.Username;
+
+                SaveRememberedUsername(username);
+
+                var mainForm = new frmMain();
+                this.Hide();
+                mainForm.ShowDialog();
+
+                SessionManager.ClearSession();
+                txtPassword.Clear();
+                this.Show();
+            }
+            catch (ApiException ex) when (ex.IsUnauthorized)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Login Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (ApiException ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Login Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    $"An unexpected error occurred: {ex.Message}",
+                    "Login Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnLogin.Enabled = true;
             }
         }
 
