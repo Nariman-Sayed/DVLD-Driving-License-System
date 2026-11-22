@@ -15,6 +15,11 @@ namespace DVLD.Api.Data.Interfaces
         DbSet<Person> People { get; }
 
         /// <summary>
+        /// Gets the set of countries.
+        /// </summary>
+        DbSet<Country> Countries { get; }
+
+        /// <summary>
         /// Gets the set of user accounts.
         /// </summary>
         DbSet<User> Users { get; }

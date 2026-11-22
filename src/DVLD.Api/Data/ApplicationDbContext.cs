@@ -18,6 +18,11 @@ namespace DVLD.Api.Data
         public DbSet<Person> People => Set<Person>();
 
         /// <summary>
+        /// Gets the set of countries.
+        /// </summary>
+        public DbSet<Country> Countries => Set<Country>();
+
+        /// <summary>
         /// Gets the set of user accounts.
         /// </summary>
         public DbSet<User> Users => Set<User>();
@@ -44,6 +49,7 @@ namespace DVLD.Api.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
+            modelBuilder.ApplyConfiguration(new CountryConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new ApplicationTypeConfiguration());
             modelBuilder.ApplyConfiguration(new TestTypeConfiguration());
