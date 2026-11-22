@@ -29,7 +29,17 @@ namespace DVLD.Desktop.Login
             try
             {
                 string username = txtUserName.Text.Trim();
-                string password = txtPassword.Text.Trim();
+                string password = txtPassword.Text;
+
+                if (string.IsNullOrEmpty(password))
+                {
+                    MessageBox.Show(
+                        "Please enter your password.",
+                        "Login",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
 
                 var request = new LoginRequestDto { Username = username, Password = password };
                 var loginResult = await ApiClient.Instance.PostAsync<LoginRequestDto, LoginResponseDto>(
