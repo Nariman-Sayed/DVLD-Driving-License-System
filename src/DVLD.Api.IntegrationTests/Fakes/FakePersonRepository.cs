@@ -7,6 +7,23 @@ namespace DVLD.Api.IntegrationTests.Fakes
 {
     public sealed class FakePersonRepository : IPersonRepository
     {
+        /// <summary>
+        /// File name of a seeded image that tests can place in the temporary storage folder.
+        /// </summary>
+        public const string SeededImageFileName = "00000000000000000000000000000001.png";
+
+        /// <summary>
+        /// Absolute legacy path used to verify that old rows are treated as missing.
+        /// </summary>
+        public static readonly string LegacyAbsolutePath =
+            Path.Combine(Path.GetTempPath(), "legacy-person-photo.jpg");
+
+        private readonly Dictionary<int, string> _imagePaths = new()
+        {
+            [2] = SeededImageFileName,
+            [5] = LegacyAbsolutePath
+        };
+
         private readonly List<PersonDto> _people = new()
         {
             CreatePerson(1, "T1", "Test", "User", "One", 1),
@@ -116,6 +133,31 @@ namespace DVLD.Api.IntegrationTests.Fakes
             if (existing is null) return Task.FromResult(false);
 
             _people.Remove(existing);
+            return Task.FromResult(true);
+        }
+
+        public Task<string?> GetImagePathAsync(int id, CancellationToken cancellationToken = default)
+        {
+            if (_imagePaths.TryGetValue(id, out var fileName))
+            {
+                return Task.FromResult<string?>(fileName);
+            }
+
+            var person = _people.FirstOrDefault(p => p.PersonID == id);
+            return Task.FromResult(person?.ImagePath);
+        }
+
+        public Task<bool> SetImagePathAsync(
+            int id,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_people.Any(p => p.PersonID == id))
+            {
+                return Task.FromResult(false);
+            }
+
+            _imagePaths[id] = fileName;
             return Task.FromResult(true);
         }
 

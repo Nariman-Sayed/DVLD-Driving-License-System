@@ -50,6 +50,14 @@ namespace DVLD.Api.Middleware
                     logLevel = LogLevel.Warning;
                     break;
 
+                case ImageStorageException:
+                    statusCode = StatusCodes.Status500InternalServerError;
+                    title = ApiErrorMessages.UnexpectedError;
+                    type = ApiErrorMessages.ServerErrorProblemType;
+                    detail = ApiErrorMessages.ImageStorageNotConfigured;
+                    logLevel = LogLevel.Error;
+                    break;
+
                 default:
                     statusCode = StatusCodes.Status500InternalServerError;
                     title = ApiErrorMessages.UnexpectedError;

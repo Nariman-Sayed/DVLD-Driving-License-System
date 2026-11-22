@@ -1,3 +1,5 @@
+using DVLD.Api.Constants;
+using DVLD.Api.Exceptions;
 using DVLD.Api.Extensions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
@@ -15,7 +17,9 @@ namespace DVLD.Api.Controllers
     [Route("api/[controller]")]
     [EnableRateLimiting(RateLimitingServiceExtensions.FixedWindowPolicy)]
     [Authorize]
-    public sealed class PersonController(IPersonService personService) : ControllerBase
+    public sealed class PersonController(
+        IPersonService personService,
+        IPersonImageService personImageService) : ControllerBase
     {
         /// <summary>
         /// Returns a page of people ordered by person identifier.
@@ -147,6 +151,66 @@ namespace DVLD.Api.Controllers
         {
             var deleted = await personService.DeletePersonAsync(id);
             return deleted ? NoContent() : NotFound($"Person with ID {id} not found.");
+        }
+
+        /// <summary>
+        /// Stores a JPEG or PNG image for a person.
+        /// </summary>
+        /// <param name="id">The person identifier.</param>
+        /// <param name="file">The multipart file holding at most 2 MB of JPEG or PNG data.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns>The generated file name stored for the person.</returns>
+        /// <response code="200">The image was stored.</response>
+        /// <response code="400">The file is empty, too large or is not JPEG or PNG.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
+        /// <response code="404">No person exists with the given identifier.</response>
+        /// <response code="429">Too many requests. Try again later.</response>
+        /// <response code="500">Image storage is not configured or an unexpected error occurred.</response>
+        [HttpPost("{id:int}/image")]
+        [ProducesResponseType(typeof(PersonImageDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PersonImageDto>> UploadImage(
+            int id,
+            [FromForm] IFormFile? file,
+            CancellationToken cancellationToken)
+        {
+            if (file is null || file.Length == 0 || file.Length > ImageRules.MaxBytes)
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.InvalidImageFile);
+            }
+
+            using var buffer = new MemoryStream();
+            await file.CopyToAsync(buffer, cancellationToken);
+
+            var stored = await personImageService.UploadAsync(id, buffer.ToArray(), cancellationToken);
+            return Ok(stored);
+        }
+
+        /// <summary>
+        /// Returns a stored person image.
+        /// </summary>
+        /// <param name="id">The person identifier.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns>The image bytes with a content type detected from the file signature.</returns>
+        /// <response code="200">The stored image was returned.</response>
+        /// <response code="401">Unauthorized. A valid JWT is required.</response>
+        /// <response code="404">The person or the stored image does not exist.</response>
+        /// <response code="429">Too many requests. Try again later.</response>
+        /// <response code="500">Image storage is not configured or an unexpected error occurred.</response>
+        [HttpGet("{id:int}/image")]
+        [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetImage(int id, CancellationToken cancellationToken)
+        {
+            var (content, contentType) = await personImageService.DownloadAsync(id, cancellationToken);
+            return File(content, contentType);
         }
     }
 }

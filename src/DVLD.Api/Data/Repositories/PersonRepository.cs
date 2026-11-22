@@ -154,6 +154,29 @@ namespace DVLD.Api.Data.Repositories
             return true;
         }
 
+        public async Task<string?> GetImagePathAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await context.People
+                .AsNoTracking()
+                .Where(p => p.PersonID == id)
+                .Select(p => p.ImagePath)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<bool> SetImagePathAsync(
+            int id,
+            string fileName,
+            CancellationToken cancellationToken = default)
+        {
+            var rowsAffected = await context.People
+                .Where(p => p.PersonID == id)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(p => p.ImagePath, fileName),
+                    cancellationToken);
+
+            return rowsAffected > 0;
+        }
+
         private async Task SaveChangesTranslatingConflictsAsync(
             CancellationToken cancellationToken,
             bool isDelete)

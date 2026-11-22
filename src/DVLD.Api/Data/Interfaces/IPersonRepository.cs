@@ -59,5 +59,22 @@ namespace DVLD.Api.Data.Interfaces
         /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
         /// <returns><see langword="true"/> when the person was deleted; otherwise <see langword="false"/>.</returns>
         Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Retrieves the stored image file name for a person.
+        /// </summary>
+        /// <param name="id">The person identifier.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns>The stored value, or <see langword="null"/> when the person does not exist.</returns>
+        Task<string?> GetImagePathAsync(int id, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Stores an image file name for a person.
+        /// </summary>
+        /// <param name="id">The person identifier.</param>
+        /// <param name="fileName">The generated file name, without any directory path.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns><see langword="true"/> when the person was updated; otherwise <see langword="false"/>.</returns>
+        Task<bool> SetImagePathAsync(int id, string fileName, CancellationToken cancellationToken = default);
     }
 }
