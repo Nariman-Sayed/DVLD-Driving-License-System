@@ -12,7 +12,7 @@ namespace DVLD.Api.Services.Implementations
     /// <summary>
     /// Authenticates users against the stored password hashes and issues JWT tokens.
     /// </summary>
-    public class AuthService : IAuthService
+    internal sealed class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
