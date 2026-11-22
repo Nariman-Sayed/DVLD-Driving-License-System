@@ -24,7 +24,7 @@ namespace DVLD.Api.Services.Implementations
 
         public async Task<PersonDto> AddNewPersonAsync(PersonDto person)
         {
-            LogAttemptingToAddPerson(person.NationalNo);
+            LogAttemptingToAddPerson();
             person.PersonID = await _repository.AddAsync(person);
             LogSuccessfullyAddedPerson(person.PersonID);
             return person;
@@ -56,8 +56,8 @@ namespace DVLD.Api.Services.Implementations
             return deleted;
         }
 
-        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to add new person with National No: {NationalNo}")]
-        private partial void LogAttemptingToAddPerson(string nationalNo);
+        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to add a new person")]
+        private partial void LogAttemptingToAddPerson();
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Successfully added person with ID: {PersonId}")]
         private partial void LogSuccessfullyAddedPerson(int personId);
