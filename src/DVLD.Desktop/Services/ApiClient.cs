@@ -36,9 +36,14 @@ namespace DVLD.Desktop.Services
                     "The API base URL in the application settings is not a valid HTTP or HTTPS address.");
             }
 
+            var primaryHandler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+            };
+
             _httpClient = new HttpClient(new BearerTokenHandler
             {
-                InnerHandler = new HttpClientHandler()
+                InnerHandler = primaryHandler
             })
             {
                 BaseAddress = baseUri,
