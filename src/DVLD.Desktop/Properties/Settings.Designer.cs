@@ -26,5 +26,16 @@ namespace DVLD.Properties
                 return defaultInstance;
             }
         }
+
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://localhost:7226/")]
+        public string ApiBaseUrl
+        {
+            get
+            {
+                return ((string)(this["ApiBaseUrl"]));
+            }
+        }
     }
 }

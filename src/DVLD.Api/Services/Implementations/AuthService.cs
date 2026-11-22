@@ -54,7 +54,7 @@ namespace DVLD.Api.Services.Implementations
                 return null;
             }
 
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+            bool isPasswordValid = VerifyPassword(request.Password, user.Password, request.Username);
 
             if (!isPasswordValid)
             {
@@ -72,6 +72,26 @@ namespace DVLD.Api.Services.Implementations
                 UserID = user.UserID,
                 Username = user.Username
             };
+        }
+
+        private bool VerifyPassword(string password, string storedPassword, string username)
+        {
+            try
+            {
+                return BCrypt.Net.BCrypt.Verify(password, storedPassword);
+            }
+            catch (Exception ex) when (ex is BCrypt.Net.SaltParseException
+                or ArgumentException
+                or IndexOutOfRangeException)
+            {
+                // A malformed or legacy plaintext stored value must be a failed login,
+                // never a server error. Never log the password or the stored hash.
+                _logger.LogWarning(
+                    "Login failed: stored password for username {Username} is not a valid BCrypt hash ({ExceptionType})",
+                    username,
+                    ex.GetType().Name);
+                return false;
+            }
         }
 
         private string GenerateJwtToken(UserDto user)

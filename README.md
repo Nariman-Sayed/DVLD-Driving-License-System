@@ -1,100 +1,148 @@
 # DVLD: Driving & Vehicle License Department System
 
-A desktop application (WinForms / .NET Framework 4.8 / C# / SQL Server) that manages the core
-operations of a driving license authority: registering people, issuing and renewing driving
-licenses, scheduling and grading tests, and handling detained/lost/damaged licenses.
+DVLD is a driving license authority system rebuilt from an educational WinForms project into a
+layered .NET solution: an ASP.NET Core Web API, a WinForms desktop client, shared DTOs, and
+integration tests. The API works against the existing DVLD SQL Server database.
 
-## Project Origin & Goal
+This repository is an active rebuild. The API currently covers authentication plus read/write
+access to people, application types, test types, and base applications. The desktop client
+currently implements login, session expiry handling, and a read-only API smoke test.
 
-This project started as a guided educational course project, built to teach layered architecture
-(Data Access / Business Logic / UI), delegates, events, and reusable UserControls in a
-C#/WinForms context.
-
-The original implementation is functionally complete for the core workflows, but, as is typical
-for teaching-oriented code, validation is partial, there is no automated testing, error handling
-is minimal, and no security, performance, or scalability concerns were addressed (see the
-[baseline audit](docs/architecture/database-design.md#audit-of-the-original-implementation) for
-specifics).
-
-**The goal of this repository is different: to take that functional baseline and rebuild it into
-a production-grade system**, applying the architecture, security, performance, and testing
-practices expected of a real enterprise application, while being transparent about where the
-project came from and what changed.
-
-This is an active, ongoing effort, not a finished product. Implementation has not started yet.
-The current state of this repo is documentation and planning only: a baseline audit of the
-original code, functional requirements, use cases, and the first architecture decision record.
-Progress will be tracked phase by phase as implementation begins (see [Roadmap](#roadmap)
-below), with each phase reviewed for architecture, security, or performance concerns before
-moving to the next.
-
-## Why This Repo Exists
-
-Most portfolio projects either stay a raw tutorial copy, or claim "production-ready" without
-evidence. This repo aims to do neither:
-
-- Every non-trivial architectural decision will be documented as an [ADR](docs/decisions/), the
-  problem, the decision, and the trade-offs, not just the resulting code.
-- The original codebase was audited **before** any rewrite began (see
-  [Database & Code Audit](docs/architecture/database-design.md#audit-of-the-original-implementation)),
-  so every future "improvement" claim can be backed by a documented *before* state.
-- Performance work (planned for a later phase) will be backed by actual before/after benchmarks
-  on a seeded dataset, not estimates, tracked under [docs/performance](docs/performance/) once
-  that phase begins.
-
-## Tech Stack
-
-| Layer | Current (baseline) | Target (production) |
-|---|---|---|
-| UI | WinForms, .NET Framework 4.8 | WinForms, .NET Framework 4.8 |
-| Data Access | Raw ADO.NET (`SqlConnection`/`SqlCommand`) | Dapper + Repository / Unit of Work |
-| Database | SQL Server | SQL Server (indexed, audited schema) |
-| Security | Plaintext password comparison | BCrypt hashing, RBAC, audit logging |
-| Testing | None | xUnit, Moq |
-| CI/CD | None | GitHub Actions |
-
-## Project Structure
+## Architecture
 
 ```
-DVLD/
-├── docs/
-│   ├── requirements/          Functional requirements
-│   ├── use-cases/              Use cases
-│   ├── architecture/          System architecture, database design, audit findings
-│   ├── decisions/             Architecture Decision Records (ADRs)
-│   └── performance/           Baseline and post-optimization benchmark results
-├── src/
-│   ├── DVLD/                  Presentation layer (WinForms)
-│   ├── DVLD_Business/         Business logic layer
-│   └── DVLD_DataAccess/       Data access layer
-└── tests/                     Unit and integration tests
+src/
+├── DVLD.Api/                  ASP.NET Core Web API (net10.0)
+│   ├── Controllers/           HTTP endpoints
+│   ├── Services/              Business logic
+│   ├── Data/                  EF Core DbContext, entities, configurations, repositories
+│   ├── Options/               Validated Jwt and RateLimiting options
+│   ├── Extensions/            Service registration
+│   └── Middleware/            ProblemDetails exception handler, rate-limit response
+├── DVLD.Desktop/              WinForms client (net10.0-windows)
+│   ├── Login/                 Login form
+│   └── Services/              Singleton ApiClient, bearer handler, ApiException
+├── DVLD.Shared/               DTOs shared by API and desktop (no data access)
+└── DVLD.Api.IntegrationTests/ xUnit integration tests with WebApplicationFactory
+db/scripts/                    Read-only database verification scripts
+docs/                          Requirements, use cases, architecture notes, ADRs
 ```
 
-## Roadmap
+Request flow in the API is controller, then service, then repository, then EF Core. The API uses
+JWT bearer authentication, returns RFC 7807 ProblemDetails for errors, logs with Serilog, and
+rate limits requests with ASP.NET Core's built-in rate limiter. The desktop client owns one
+long-lived `HttpClient` behind `ApiClient.Instance`, attaches the current session token on every
+request, and converts API errors into messages a user can act on.
 
-The rebuild is planned as a series of phases, covering (in order): core setup, people/user
-management, applications and licensing workflows, testing/scheduling, an architectural refactor
-(Repository/Unit of Work/Dapper), security hardening, performance optimization with measured
-benchmarks, and automated testing/CI-CD.
+EF Core maps to the existing DVLD schema. There are no migrations in this repository and the API
+does not create or alter the database.
 
-Current phase: **Planning & baseline audit complete, implementation not yet started.**
+## Prerequisites
 
-## Documentation
+- .NET 10 SDK.
+- Windows to run the desktop project.
+- A SQL Server instance with the DVLD database restored (tables include `People`, `Users`,
+  `ApplicationTypes`, `TestTypes`, and `Applications`).
+- A user row in `Users` whose `Password` column contains a BCrypt hash.
 
-- [Functional Requirements](docs/requirements/functional-requirements.md)
-- [Use Cases](docs/use-cases/use-cases.md)
-- [Database Design & Original Codebase Audit](docs/architecture/database-design.md)
-- [Architecture Decisions](docs/decisions/)
-- [Performance Benchmarks](docs/performance/)
+## Configure secrets
 
-## Mentorship & Review
+The API reads its connection string and JWT signing key from user-secrets during development.
+Neither value belongs in `appsettings.json`, and neither should ever be committed.
 
-Major phases of this rebuild, particularly architectural refactoring, security hardening, and
-performance work, are reviewed with external senior engineers before moving forward, to
-sanity-check decisions before they're implemented rather than only after.
+From the repository root:
 
-## Status
+```powershell
+cd src/DVLD.Api
+dotnet user-secrets set "ConnectionStrings:DVLDConnection" "<your DVLD connection string>"
+```
 
-📋 Planning stage. Requirements, use cases, and the baseline audit are complete. Implementation
-has not started yet. This README and the linked docs will be updated as each phase begins and
-completes.
+Generate a random signing key and store it without printing it:
+
+```powershell
+$key = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+dotnet user-secrets set "Jwt:Key" $key
+```
+
+The key must be at least 32 bytes. The API validates `Jwt:Key`, `Jwt:Issuer`, and `Jwt:Audience`
+at startup and fails fast with a clear message when the key is missing or too short. Issuer and
+audience already have defaults in `src/DVLD.Api/appsettings.json`.
+
+## Run the API
+
+From the repository root:
+
+```powershell
+dotnet run --project src/DVLD.Api --launch-profile https
+```
+
+The HTTPS profile listens on `https://localhost:7226` and `http://localhost:5250`. In Development,
+the OpenAPI document and Scalar UI are available at `/openapi/v1.json` and `/scalar/v1`.
+
+`POST /api/auth/login` accepts `{ "username": "...", "password": "..." }` and returns a JWT.
+The other endpoints require `Authorization: Bearer <token>`. The login endpoint has a stricter
+fixed-window rate limit than the rest of the API: five requests per 60 seconds per client by
+default, configurable through the `RateLimiting` section. Exceeding it returns a 429
+ProblemDetails response.
+
+## Run the desktop client
+
+Start the API first, then from the repository root:
+
+```powershell
+dotnet run --project src/DVLD.Desktop
+```
+
+The desktop base URL is the `ApiBaseUrl` application setting in
+`src/DVLD.Desktop/Properties/Settings.settings`, defaulting to `https://localhost:7226/`. If the
+API runs on a different address, change that setting and rebuild.
+
+After a successful login the main form opens. When the API returns 401, the client clears the
+session and returns to the login form with an explanatory message.
+
+## Build and test
+
+```powershell
+dotnet build src/DVLD.slnx -c Release
+dotnet test src/DVLD.slnx -c Release
+```
+
+The build is expected to produce zero warnings. The test suite currently has 27 integration tests
+and does not require a database: repository fakes are injected into the test host. Tests cover
+authentication outcomes (unknown user, wrong password, inactive account, malformed stored hash,
+valid login), login rate limiting, and the existing controller behaviour.
+
+CI is defined in `.github/workflows/build-and-test.yml`. It runs on `windows-latest` for every
+push and every pull request, restores the solution, builds it in Release (including the desktop
+project), runs the tests with coverage, and uploads the coverage artifact.
+
+## Verify EF Core mappings
+
+`db/scripts/verify-ef-mappings.sql` is a read-only script that lists columns, types, nullability,
+identity columns, constraints, and foreign keys for the mapped tables. Run it with your normal
+SQL client, for example:
+
+```powershell
+sqlcmd -S <server> -d DVLD -E -i db/scripts/verify-ef-mappings.sql
+```
+
+## Known gaps
+
+- No role-based access control. Any valid JWT can call every authorized endpoint.
+- No audit trail for authentication or data changes.
+- No concurrency control. Concurrent updates follow last-write-wins.
+- No SQL Server integration tests in CI. CI uses repository fakes only.
+- Login rate limiting is per client IP and in-memory, so it is not shared across API instances.
+- No refresh tokens or token revocation; clients re-authenticate when the JWT expires.
+- The desktop client does not yet implement the licensing workflows behind the main menu.
+
+## Project origin and documentation
+
+The original course project taught layered architecture, delegates, events, and reusable
+UserControls in WinForms. The baseline audit, requirements, and use cases are preserved so the
+rebuild can be compared with the starting point.
+
+- [Functional requirements](docs/requirements/functional-requirements.md)
+- [Use cases](docs/use-cases/use-cases.md)
+- [Database design and baseline audit](docs/architecture/database-design.md)
+- [Architecture decision records](docs/decisions/)
