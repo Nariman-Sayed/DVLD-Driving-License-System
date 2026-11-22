@@ -1,4 +1,5 @@
 using DVLD.Api.Constants;
+using DVLD.Api.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,8 @@ namespace DVLD.Api.Middleware
     /// Global exception handler that maps exceptions to RFC 7807 <see cref="ProblemDetails"/> responses.
     /// </summary>
     /// <param name="logger">The logger used to record exceptions.</param>
-    /// <param name="environment">The hosting environment used to determine whether details are exposed.</param>
     internal sealed class GlobalExceptionHandler(
-        ILogger<GlobalExceptionHandler> logger,
-        IHostEnvironment environment) : IExceptionHandler
+        ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
     {
         /// <inheritdoc />
         public async ValueTask<bool> TryHandleAsync(
@@ -19,47 +18,63 @@ namespace DVLD.Api.Middleware
             Exception exception,
             CancellationToken cancellationToken)
         {
-            bool isValidationException = exception.GetType().FullName == "DVLD.Api.Exceptions.ApplicationValidationException";
+            int statusCode;
+            string title;
+            string type;
+            string detail;
+            LogLevel logLevel;
 
-            if (isValidationException)
+            switch (exception)
             {
-                logger.LogWarning(
-                    exception,
-                    "Validation exception while processing {Path}. TraceId: {TraceId}",
-                    httpContext.Request.Path,
-                    httpContext.TraceIdentifier);
-            }
-            else
-            {
-                logger.LogError(
-                    exception,
-                    "Unhandled exception while processing {Path}. TraceId: {TraceId}",
-                    httpContext.Request.Path,
-                    httpContext.TraceIdentifier);
+                case ApplicationValidationException:
+                    statusCode = StatusCodes.Status400BadRequest;
+                    title = exception.Message;
+                    type = ApiErrorMessages.ValidationProblemType;
+                    detail = exception.Message;
+                    logLevel = LogLevel.Warning;
+                    break;
+
+                case NotFoundException:
+                    statusCode = StatusCodes.Status404NotFound;
+                    title = ApiErrorMessages.NotFoundTitle;
+                    type = ApiErrorMessages.NotFoundProblemType;
+                    detail = exception.Message;
+                    logLevel = LogLevel.Warning;
+                    break;
+
+                case ConflictException:
+                    statusCode = StatusCodes.Status409Conflict;
+                    title = ApiErrorMessages.ConflictTitle;
+                    type = ApiErrorMessages.ConflictProblemType;
+                    detail = exception.Message;
+                    logLevel = LogLevel.Warning;
+                    break;
+
+                default:
+                    statusCode = StatusCodes.Status500InternalServerError;
+                    title = ApiErrorMessages.UnexpectedError;
+                    type = ApiErrorMessages.ServerErrorProblemType;
+                    detail = ApiErrorMessages.UnexpectedDetail;
+                    logLevel = LogLevel.Error;
+                    break;
             }
 
-            int statusCode = isValidationException
-                ? StatusCodes.Status400BadRequest
-                : StatusCodes.Status500InternalServerError;
+            logger.Log(
+                logLevel,
+                exception,
+                "Exception {ExceptionType} while processing {Path}. TraceId: {TraceId}",
+                exception.GetType().Name,
+                httpContext.Request.Path,
+                httpContext.TraceIdentifier);
 
             var problemDetails = new ProblemDetails
             {
                 Status = statusCode,
-                Title = isValidationException ? exception.Message : ApiErrorMessages.UnexpectedError,
-                Type = isValidationException
-                    ? ApiErrorMessages.ValidationProblemType
-                    : ApiErrorMessages.ServerErrorProblemType,
+                Title = title,
+                Type = type,
+                Detail = detail,
                 Instance = httpContext.Request.Path
             };
-
-            if (isValidationException)
-            {
-                problemDetails.Detail = exception.Message;
-            }
-            else if (environment.IsDevelopment())
-            {
-                problemDetails.Detail = exception.ToString();
-            }
 
             problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
 
