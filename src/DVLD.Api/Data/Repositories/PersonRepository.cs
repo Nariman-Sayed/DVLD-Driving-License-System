@@ -3,6 +3,7 @@ using DVLD.Api.Data.Entities;
 using DVLD.Api.Data.Interfaces;
 using DVLD.Api.Exceptions;
 using DVLD.Shared;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
@@ -90,11 +91,24 @@ namespace DVLD.Api.Data.Repositories
             return person is null ? null : ToDto(person);
         }
 
+        public async Task<bool> NationalNoExistsAsync(
+            string nationalNo,
+            int? excludePersonId = null,
+            CancellationToken cancellationToken = default)
+        {
+            return await context.People
+                .AsNoTracking()
+                .AnyAsync(
+                    p => p.NationalNo == nationalNo &&
+                         (!excludePersonId.HasValue || p.PersonID != excludePersonId.Value),
+                    cancellationToken);
+        }
+
         public async Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
         {
             var entity = ToEntity(person);
             context.People.Add(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: false);
             return entity.PersonID;
         }
 
@@ -121,7 +135,7 @@ namespace DVLD.Api.Data.Repositories
             entity.NationalityCountryID = person.NationalityCountryID;
             entity.ImagePath = string.IsNullOrEmpty(person.ImagePath) ? null : person.ImagePath;
 
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: false);
             return true;
         }
 
@@ -136,8 +150,29 @@ namespace DVLD.Api.Data.Repositories
             }
 
             context.People.Remove(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: true);
             return true;
+        }
+
+        private async Task SaveChangesTranslatingConflictsAsync(
+            CancellationToken cancellationToken,
+            bool isDelete)
+        {
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception) when (exception.InnerException is SqlException sqlException)
+            {
+                var conflict = DatabaseConflictTranslator.Translate(sqlException.Number, isDelete);
+
+                if (conflict is not null)
+                {
+                    throw conflict;
+                }
+
+                throw;
+            }
         }
 
         private static PersonDto ToDto(Person person)

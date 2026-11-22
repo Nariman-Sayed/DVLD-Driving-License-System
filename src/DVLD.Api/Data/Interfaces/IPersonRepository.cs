@@ -24,6 +24,18 @@ namespace DVLD.Api.Data.Interfaces
         Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Checks whether a national number is already used by another person.
+        /// </summary>
+        /// <param name="nationalNo">The national number to check.</param>
+        /// <param name="excludePersonId">An optional person identifier to exclude from the check.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns><see langword="true"/> when the value is already in use.</returns>
+        Task<bool> NationalNoExistsAsync(
+            string nationalNo,
+            int? excludePersonId = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Creates a new person.
         /// </summary>
         /// <param name="person">The person to create.</param>

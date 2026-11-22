@@ -17,7 +17,7 @@ namespace DVLD.Api.IntegrationTests
         [Fact]
         public async Task AddPerson_WithValidBody_ReturnsCreated()
         {
-            var response = await _client.PostAsJsonAsync("/api/person", CreateValidPerson());
+            var response = await _client.PostAsJsonAsync("/api/person", TestData.CreateValidPerson());
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -25,7 +25,7 @@ namespace DVLD.Api.IntegrationTests
         [Fact]
         public async Task AddPerson_WithMissingRequiredFields_ReturnsBadRequest()
         {
-            var person = CreateValidPerson();
+            var person = TestData.CreateValidPerson();
             person.NationalNo = string.Empty;
             person.FirstName = string.Empty;
             person.Address = string.Empty;
@@ -45,7 +45,7 @@ namespace DVLD.Api.IntegrationTests
         [InlineData(nameof(PersonDto.Address), 501)]
         public async Task AddPerson_WithTooLongField_ReturnsBadRequest(string propertyName, int length)
         {
-            var person = CreateValidPerson();
+            var person = TestData.CreateValidPerson();
             var value = new string('x', length);
 
             switch (propertyName)
@@ -78,31 +78,13 @@ namespace DVLD.Api.IntegrationTests
         [Fact]
         public async Task UpdatePerson_WithInvalidBody_ReturnsBadRequest()
         {
-            var person = CreateValidPerson();
+            var person = TestData.CreateValidPerson();
             person.NationalityCountryID = 0;
 
             var response = await _client.PutAsJsonAsync("/api/person/1", person);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-
-        private static PersonDto CreateValidPerson()
-        {
-            return new PersonDto
-            {
-                FirstName = "Valid",
-                SecondName = "Test",
-                ThirdName = string.Empty,
-                LastName = "Person",
-                NationalNo = "V1",
-                DateOfBirth = new DateTime(1995, 5, 20),
-                Gendor = 0,
-                Address = "Valid Address",
-                Phone = "1234567",
-                Email = "valid@example.com",
-                NationalityCountryID = 1,
-                ImagePath = string.Empty
-            };
-        }
     }
 }
+

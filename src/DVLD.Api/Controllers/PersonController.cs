@@ -81,6 +81,7 @@ namespace DVLD.Api.Controllers
         /// <response code="201">The person was created; the Location header points to the new resource.</response>
         /// <response code="400">The request body failed validation.</response>
         /// <response code="401">Unauthorized. A valid JWT is required.</response>
+        /// <response code="409">A person with the same national number already exists.</response>
         /// <response code="429">Too many requests. Try again later.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // POST: api/person
@@ -88,6 +89,7 @@ namespace DVLD.Api.Controllers
         [ProducesResponseType(typeof(PersonDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PersonDto>> AddNewPerson(PersonDto person)
@@ -105,6 +107,7 @@ namespace DVLD.Api.Controllers
         /// <response code="400">The request body failed validation.</response>
         /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="404">No person exists with the given identifier.</response>
+        /// <response code="409">A person with the same national number already exists.</response>
         /// <response code="429">Too many requests. Try again later.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // PUT: api/person/5
@@ -113,6 +116,7 @@ namespace DVLD.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> UpdatePerson(int id, PersonDto person)
@@ -128,6 +132,7 @@ namespace DVLD.Api.Controllers
         /// <response code="204">The person was deleted.</response>
         /// <response code="401">Unauthorized. A valid JWT is required.</response>
         /// <response code="404">No person exists with the given identifier.</response>
+        /// <response code="409">Other records still reference this person.</response>
         /// <response code="429">Too many requests. Try again later.</response>
         /// <response code="500">An unexpected error occurred.</response>
         // DELETE: api/person/5
@@ -135,6 +140,7 @@ namespace DVLD.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> DeletePerson(int id)

@@ -74,6 +74,18 @@ namespace DVLD.Api.IntegrationTests.Fakes
             return Task.FromResult(person);
         }
 
+        public Task<bool> NationalNoExistsAsync(
+            string nationalNo,
+            int? excludePersonId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var exists = _people.Any(p =>
+                string.Equals(p.NationalNo, nationalNo, StringComparison.OrdinalIgnoreCase) &&
+                (!excludePersonId.HasValue || p.PersonID != excludePersonId.Value));
+
+            return Task.FromResult(exists);
+        }
+
         public Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
         {
             person.PersonID = _people.Count > 0 ? _people.Max(p => p.PersonID) + 1 : 1;
@@ -94,6 +106,12 @@ namespace DVLD.Api.IntegrationTests.Fakes
 
         public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
+            // Person 1 is reserved to simulate the SQL 547 foreign key block in tests.
+            if (id == 1)
+            {
+                throw new ConflictException(ApiErrorMessages.PersonDeleteBlocked);
+            }
+
             var existing = _people.FirstOrDefault(p => p.PersonID == id);
             if (existing is null) return Task.FromResult(false);
 

@@ -47,6 +47,12 @@ namespace DVLD.Api.Services.Implementations
         public async Task<PersonDto> AddNewPersonAsync(PersonDto person)
         {
             LogAttemptingToAddPerson();
+
+            if (await _repository.NationalNoExistsAsync(person.NationalNo))
+            {
+                throw new ConflictException(ApiErrorMessages.DuplicateNationalNo);
+            }
+
             person.PersonID = await _repository.AddAsync(person);
             LogSuccessfullyAddedPerson(person.PersonID);
             return person;
@@ -55,6 +61,12 @@ namespace DVLD.Api.Services.Implementations
         public async Task<bool> UpdatePersonAsync(int id, PersonDto person)
         {
             LogAttemptingToUpdatePerson(id);
+
+            if (await _repository.NationalNoExistsAsync(person.NationalNo, excludePersonId: id))
+            {
+                throw new ConflictException(ApiErrorMessages.DuplicateNationalNo);
+            }
+
             var updated = await _repository.UpdateAsync(id, person);
 
             if (!updated)
