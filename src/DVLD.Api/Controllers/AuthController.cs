@@ -36,11 +36,13 @@ namespace DVLD.Api.Controllers
         /// <response code="200">Authentication succeeded.</response>
         /// <response code="400">The request body failed validation.</response>
         /// <response code="401">Invalid username or password.</response>
+        /// <response code="429">Too many login attempts. Try again later.</response>
         [HttpPost("login")]
         [EnableRateLimiting(RateLimitingServiceExtensions.AuthLoginPolicy)]
         [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto request)
         {
             if (!ModelState.IsValid)
