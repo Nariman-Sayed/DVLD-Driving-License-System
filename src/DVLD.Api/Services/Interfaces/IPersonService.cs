@@ -10,10 +10,13 @@ namespace DVLD.Api.Services.Interfaces
     public interface IPersonService
     {
         /// <summary>
-        /// Retrieves all people.
+        /// Retrieves one page of people with an optional allow-listed filter.
         /// </summary>
-        /// <returns>A read-only result containing every person; an empty list when there are none.</returns>
-        Task<List<PersonDto>> GetAllPeopleAsync();
+        /// <param name="query">The paging and filter values.</param>
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        /// <returns>The requested page and the total number of matching people.</returns>
+        /// <exception cref="DVLD.Api.Exceptions.ApplicationValidationException">Paging or filter values are invalid.</exception>
+        Task<PagedResult<PersonDto>> GetPeopleAsync(PersonQuery query, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves a single person by identifier.

@@ -162,7 +162,7 @@ namespace DVLD.Desktop
 
             try
             {
-                string content = await ApiClient.Instance.GetStringAsync("api/person");
+                string content = await ApiClient.Instance.GetStringAsync("api/person?pageNumber=1&pageSize=20");
 
                 MessageBox.Show($"Success!\n\n{content}", "API Test", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

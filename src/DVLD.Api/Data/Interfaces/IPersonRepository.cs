@@ -8,11 +8,12 @@ namespace DVLD.Api.Data.Interfaces
     public interface IPersonRepository
     {
         /// <summary>
-        /// Retrieves all people.
+        /// Retrieves one page of people with an optional allow-listed filter.
         /// </summary>
+        /// <param name="query">The paging and filter values.</param>
         /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
-        /// <returns>All people; an empty list when none exist.</returns>
-        Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default);
+        /// <returns>The requested page and the total number of matching people.</returns>
+        Task<PagedResult<PersonDto>> GetPagedAsync(PersonQuery query, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Retrieves a single person by identifier.

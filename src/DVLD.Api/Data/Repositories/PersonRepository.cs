@@ -1,5 +1,7 @@
-﻿using DVLD.Api.Data.Entities;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Data.Entities;
 using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,11 +9,51 @@ namespace DVLD.Api.Data.Repositories
 {
     internal sealed class PersonRepository(IApplicationDbContext context) : IPersonRepository
     {
-        public async Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<PagedResult<PersonDto>> GetPagedAsync(
+            PersonQuery query,
+            CancellationToken cancellationToken = default)
         {
-            return await context.People
-                .AsNoTracking()
-                .OrderBy(p => p.FirstName)
+            IQueryable<Person> peopleQuery = context.People.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(query.FilterOn) &&
+                !string.IsNullOrWhiteSpace(query.FilterQuery))
+            {
+                var value = query.FilterQuery;
+
+                if (string.Equals(query.FilterOn, PersonFilters.NationalNo, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.NationalNo.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.FirstName, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.FirstName.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.LastName, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.LastName.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.CountryId, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(value, out var countryId))
+                    {
+                        throw new ApplicationValidationException(ApiErrorMessages.InvalidCountryFilter);
+                    }
+
+                    peopleQuery = peopleQuery.Where(p => p.NationalityCountryID == countryId);
+                }
+                else
+                {
+                    throw new ApplicationValidationException(ApiErrorMessages.UnknownPersonFilter);
+                }
+            }
+
+            var totalCount = await peopleQuery.CountAsync(cancellationToken);
+            var skip = (int)Math.Min(((long)(query.PageNumber - 1)) * query.PageSize, int.MaxValue);
+
+            var items = await peopleQuery
+                .OrderBy(p => p.PersonID)
+                .Skip(skip)
+                .Take(query.PageSize)
                 .Select(p => new PersonDto
                 {
                     PersonID = p.PersonID,
@@ -29,6 +71,14 @@ namespace DVLD.Api.Data.Repositories
                     ImagePath = p.ImagePath ?? string.Empty
                 })
                 .ToListAsync(cancellationToken);
+
+            return new PagedResult<PersonDto>
+            {
+                Items = items,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
         }
 
         public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)

@@ -90,5 +90,20 @@ namespace DVLD.Api.Constants
         /// Message used when the image storage directory is not configured.
         /// </summary>
         public const string ImageStorageNotConfigured = "Person image storage is not configured. Set Storage:PersonImagesPath in user-secrets.";
+
+        /// <summary>
+        /// Message used when paging values are outside the supported range.
+        /// </summary>
+        public const string InvalidPaging = "Page number must be at least 1 and page size must be between 1 and 100.";
+
+        /// <summary>
+        /// Message used when a person filter field is not in the allow-list.
+        /// </summary>
+        public const string UnknownPersonFilter = "The requested person filter field is not supported.";
+
+        /// <summary>
+        /// Message used when the country filter value is not an integer.
+        /// </summary>
+        public const string InvalidCountryFilter = "The country filter value must be an integer.";
     }
 }

@@ -1,4 +1,6 @@
-﻿using DVLD.Api.Data.Interfaces;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.Extensions.Logging;
@@ -12,9 +14,29 @@ namespace DVLD.Api.Services.Implementations
         private readonly IPersonRepository _repository = repository;
         private readonly ILogger<PersonService> _logger = logger;
 
-        public async Task<List<PersonDto>> GetAllPeopleAsync()
+        public async Task<PagedResult<PersonDto>> GetPeopleAsync(
+            PersonQuery query,
+            CancellationToken cancellationToken = default)
         {
-            return await _repository.GetAllAsync();
+            if (query.PageNumber < 1 || query.PageSize < 1 || query.PageSize > 100)
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.InvalidPaging);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.FilterOn) &&
+                !PersonFilters.Allowed.Contains(query.FilterOn))
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.UnknownPersonFilter);
+            }
+
+            if (string.Equals(query.FilterOn, PersonFilters.CountryId, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(query.FilterQuery) &&
+                !int.TryParse(query.FilterQuery, out _))
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.InvalidCountryFilter);
+            }
+
+            return await _repository.GetPagedAsync(query, cancellationToken);
         }
 
         public async Task<PersonDto?> GetPersonByIdAsync(int id)
