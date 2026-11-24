@@ -49,6 +49,17 @@ namespace DVLD.Api.IntegrationTests
 
                 services.AddScoped<IPersonRepository, FakePersonRepository>();
 
+                // Countries are read-only, so the fake keeps the tests independent of the database.
+                var countryDescriptor = services.SingleOrDefault(
+                    d => d.ServiceType == typeof(ICountryRepository));
+
+                if (countryDescriptor is not null)
+                {
+                    services.Remove(countryDescriptor);
+                }
+
+                services.AddScoped<ICountryRepository, FakeCountryRepository>();
+
                 // Remove the real IApplicationTypeRepository registration, mirroring the
                 // person repository swap above so application type tests use the fake.
                 var applicationTypeDescriptor = services.SingleOrDefault(
