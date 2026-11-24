@@ -1,4 +1,6 @@
-﻿using DVLD.Api.Data.Interfaces;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Api.Services.Interfaces;
 using DVLD.Shared;
 using Microsoft.Extensions.Logging;
@@ -12,9 +14,29 @@ namespace DVLD.Api.Services.Implementations
         private readonly IPersonRepository _repository = repository;
         private readonly ILogger<PersonService> _logger = logger;
 
-        public async Task<List<PersonDto>> GetAllPeopleAsync()
+        public async Task<PagedResult<PersonDto>> GetPeopleAsync(
+            PersonQuery query,
+            CancellationToken cancellationToken = default)
         {
-            return await _repository.GetAllAsync();
+            if (query.PageNumber < 1 || query.PageSize < 1 || query.PageSize > 100)
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.InvalidPaging);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.FilterOn) &&
+                !PersonFilters.Allowed.Contains(query.FilterOn))
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.UnknownPersonFilter);
+            }
+
+            if (string.Equals(query.FilterOn, PersonFilters.CountryId, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(query.FilterQuery) &&
+                !int.TryParse(query.FilterQuery, out _))
+            {
+                throw new ApplicationValidationException(ApiErrorMessages.InvalidCountryFilter);
+            }
+
+            return await _repository.GetPagedAsync(query, cancellationToken);
         }
 
         public async Task<PersonDto?> GetPersonByIdAsync(int id)
@@ -24,7 +46,13 @@ namespace DVLD.Api.Services.Implementations
 
         public async Task<PersonDto> AddNewPersonAsync(PersonDto person)
         {
-            LogAttemptingToAddPerson(person.NationalNo);
+            LogAttemptingToAddPerson();
+
+            if (await _repository.NationalNoExistsAsync(person.NationalNo))
+            {
+                throw new ConflictException(ApiErrorMessages.DuplicateNationalNo);
+            }
+
             person.PersonID = await _repository.AddAsync(person);
             LogSuccessfullyAddedPerson(person.PersonID);
             return person;
@@ -33,6 +61,12 @@ namespace DVLD.Api.Services.Implementations
         public async Task<bool> UpdatePersonAsync(int id, PersonDto person)
         {
             LogAttemptingToUpdatePerson(id);
+
+            if (await _repository.NationalNoExistsAsync(person.NationalNo, excludePersonId: id))
+            {
+                throw new ConflictException(ApiErrorMessages.DuplicateNationalNo);
+            }
+
             var updated = await _repository.UpdateAsync(id, person);
 
             if (!updated)
@@ -56,8 +90,8 @@ namespace DVLD.Api.Services.Implementations
             return deleted;
         }
 
-        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to add new person with National No: {NationalNo}")]
-        private partial void LogAttemptingToAddPerson(string nationalNo);
+        [LoggerMessage(Level = LogLevel.Information, Message = "Attempting to add a new person")]
+        private partial void LogAttemptingToAddPerson();
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Successfully added person with ID: {PersonId}")]
         private partial void LogSuccessfullyAddedPerson(int personId);

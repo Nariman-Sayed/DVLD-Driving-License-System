@@ -1,17 +1,60 @@
-﻿using DVLD.Api.Data.Entities;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Data.Entities;
 using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Shared;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace DVLD.Api.Data.Repositories
 {
     internal sealed class PersonRepository(IApplicationDbContext context) : IPersonRepository
     {
-        public async Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<PagedResult<PersonDto>> GetPagedAsync(
+            PersonQuery query,
+            CancellationToken cancellationToken = default)
         {
-            return await context.People
-                .AsNoTracking()
-                .OrderBy(p => p.FirstName)
+            IQueryable<Person> peopleQuery = context.People.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(query.FilterOn) &&
+                !string.IsNullOrWhiteSpace(query.FilterQuery))
+            {
+                var value = query.FilterQuery;
+
+                if (string.Equals(query.FilterOn, PersonFilters.NationalNo, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.NationalNo.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.FirstName, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.FirstName.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.LastName, StringComparison.OrdinalIgnoreCase))
+                {
+                    peopleQuery = peopleQuery.Where(p => p.LastName.Contains(value));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.CountryId, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(value, out var countryId))
+                    {
+                        throw new ApplicationValidationException(ApiErrorMessages.InvalidCountryFilter);
+                    }
+
+                    peopleQuery = peopleQuery.Where(p => p.NationalityCountryID == countryId);
+                }
+                else
+                {
+                    throw new ApplicationValidationException(ApiErrorMessages.UnknownPersonFilter);
+                }
+            }
+
+            var totalCount = await peopleQuery.CountAsync(cancellationToken);
+            var skip = (int)Math.Min(((long)(query.PageNumber - 1)) * query.PageSize, int.MaxValue);
+
+            var items = await peopleQuery
+                .OrderBy(p => p.PersonID)
+                .Skip(skip)
+                .Take(query.PageSize)
                 .Select(p => new PersonDto
                 {
                     PersonID = p.PersonID,
@@ -29,6 +72,14 @@ namespace DVLD.Api.Data.Repositories
                     ImagePath = p.ImagePath ?? string.Empty
                 })
                 .ToListAsync(cancellationToken);
+
+            return new PagedResult<PersonDto>
+            {
+                Items = items,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
         }
 
         public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -40,11 +91,24 @@ namespace DVLD.Api.Data.Repositories
             return person is null ? null : ToDto(person);
         }
 
+        public async Task<bool> NationalNoExistsAsync(
+            string nationalNo,
+            int? excludePersonId = null,
+            CancellationToken cancellationToken = default)
+        {
+            return await context.People
+                .AsNoTracking()
+                .AnyAsync(
+                    p => p.NationalNo == nationalNo &&
+                         (!excludePersonId.HasValue || p.PersonID != excludePersonId.Value),
+                    cancellationToken);
+        }
+
         public async Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
         {
             var entity = ToEntity(person);
             context.People.Add(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: false);
             return entity.PersonID;
         }
 
@@ -71,7 +135,7 @@ namespace DVLD.Api.Data.Repositories
             entity.NationalityCountryID = person.NationalityCountryID;
             entity.ImagePath = string.IsNullOrEmpty(person.ImagePath) ? null : person.ImagePath;
 
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: false);
             return true;
         }
 
@@ -86,8 +150,29 @@ namespace DVLD.Api.Data.Repositories
             }
 
             context.People.Remove(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await SaveChangesTranslatingConflictsAsync(cancellationToken, isDelete: true);
             return true;
+        }
+
+        private async Task SaveChangesTranslatingConflictsAsync(
+            CancellationToken cancellationToken,
+            bool isDelete)
+        {
+            try
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception) when (exception.InnerException is SqlException sqlException)
+            {
+                var conflict = DatabaseConflictTranslator.Translate(sqlException.Number, isDelete);
+
+                if (conflict is not null)
+                {
+                    throw conflict;
+                }
+
+                throw;
+            }
         }
 
         private static PersonDto ToDto(Person person)

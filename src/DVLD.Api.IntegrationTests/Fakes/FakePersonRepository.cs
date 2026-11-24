@@ -1,39 +1,89 @@
-﻿using DVLD.Api.Data.Interfaces;
+﻿using DVLD.Api.Constants;
+using DVLD.Api.Data.Interfaces;
+using DVLD.Api.Exceptions;
 using DVLD.Shared;
 
 namespace DVLD.Api.IntegrationTests.Fakes
 {
-    public class FakePersonRepository : IPersonRepository
+    public sealed class FakePersonRepository : IPersonRepository
     {
         private readonly List<PersonDto> _people = new()
         {
-            new PersonDto
-            {
-                PersonID = 1,
-                FirstName = "Test",
-                SecondName = "User",
-                ThirdName = "",
-                LastName = "One",
-                NationalNo = "T1",
-                DateOfBirth = new DateTime(1990, 1, 1),
-                Gendor = 0,
-                Address = "Test Address",
-                Phone = "0000000",
-                Email = "test@test.com",
-                NationalityCountryID = 1,
-                ImagePath = ""
-            }
+            CreatePerson(1, "T1", "Test", "User", "One", 1),
+            CreatePerson(2, "T2", "Alpha", "Beta", "Gamma", 1),
+            CreatePerson(3, "T3", "Bravo", "Charlie", "Delta", 2),
+            CreatePerson(4, "T4", "Charlie", "Delta", "Echo", 2),
+            CreatePerson(5, "T5", "Delta", "Echo", "Foxtrot", 3)
         };
 
-        public Task<List<PersonDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        public Task<PagedResult<PersonDto>> GetPagedAsync(
+            PersonQuery query,
+            CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(_people.ToList());
+            IEnumerable<PersonDto> matching = _people;
+
+            if (!string.IsNullOrWhiteSpace(query.FilterOn) &&
+                !string.IsNullOrWhiteSpace(query.FilterQuery))
+            {
+                var value = query.FilterQuery;
+
+                if (string.Equals(query.FilterOn, PersonFilters.NationalNo, StringComparison.OrdinalIgnoreCase))
+                {
+                    matching = matching.Where(p => p.NationalNo.Contains(value, StringComparison.OrdinalIgnoreCase));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.FirstName, StringComparison.OrdinalIgnoreCase))
+                {
+                    matching = matching.Where(p => p.FirstName.Contains(value, StringComparison.OrdinalIgnoreCase));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.LastName, StringComparison.OrdinalIgnoreCase))
+                {
+                    matching = matching.Where(p => p.LastName.Contains(value, StringComparison.OrdinalIgnoreCase));
+                }
+                else if (string.Equals(query.FilterOn, PersonFilters.CountryId, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(value, out var countryId))
+                    {
+                        throw new ApplicationValidationException(ApiErrorMessages.InvalidCountryFilter);
+                    }
+
+                    matching = matching.Where(p => p.NationalityCountryID == countryId);
+                }
+                else
+                {
+                    throw new ApplicationValidationException(ApiErrorMessages.UnknownPersonFilter);
+                }
+            }
+
+            var ordered = matching.OrderBy(p => p.PersonID).ToList();
+            var skip = (int)Math.Min(((long)(query.PageNumber - 1)) * query.PageSize, int.MaxValue);
+
+            var page = new PagedResult<PersonDto>
+            {
+                Items = ordered.Skip(skip).Take(query.PageSize).ToList(),
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = ordered.Count
+            };
+
+            return Task.FromResult(page);
         }
 
         public Task<PersonDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             var person = _people.FirstOrDefault(p => p.PersonID == id);
             return Task.FromResult(person);
+        }
+
+        public Task<bool> NationalNoExistsAsync(
+            string nationalNo,
+            int? excludePersonId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var exists = _people.Any(p =>
+                string.Equals(p.NationalNo, nationalNo, StringComparison.OrdinalIgnoreCase) &&
+                (!excludePersonId.HasValue || p.PersonID != excludePersonId.Value));
+
+            return Task.FromResult(exists);
         }
 
         public Task<int> AddAsync(PersonDto person, CancellationToken cancellationToken = default)
@@ -56,11 +106,43 @@ namespace DVLD.Api.IntegrationTests.Fakes
 
         public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
+            // Person 1 is reserved to simulate the SQL 547 foreign key block in tests.
+            if (id == 1)
+            {
+                throw new ConflictException(ApiErrorMessages.PersonDeleteBlocked);
+            }
+
             var existing = _people.FirstOrDefault(p => p.PersonID == id);
             if (existing is null) return Task.FromResult(false);
 
             _people.Remove(existing);
             return Task.FromResult(true);
+        }
+
+        private static PersonDto CreatePerson(
+            int id,
+            string nationalNo,
+            string firstName,
+            string secondName,
+            string lastName,
+            int countryId)
+        {
+            return new PersonDto
+            {
+                PersonID = id,
+                FirstName = firstName,
+                SecondName = secondName,
+                ThirdName = string.Empty,
+                LastName = lastName,
+                NationalNo = nationalNo,
+                DateOfBirth = new DateTime(1990, 1, 1),
+                Gendor = 0,
+                Address = "Test Address",
+                Phone = "0000000",
+                Email = "test@test.com",
+                NationalityCountryID = countryId,
+                ImagePath = string.Empty
+            };
         }
     }
 }
