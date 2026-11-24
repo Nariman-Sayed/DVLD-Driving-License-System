@@ -31,7 +31,8 @@ namespace DVLD.Api.IntegrationTests
                     ["Jwt:Issuer"] = "DVLD.Api",
                     ["Jwt:Audience"] = "DVLD.Desktop",
                     ["RateLimiting:LoginPermitLimit"] = "1000",
-                    ["RateLimiting:LoginWindowSeconds"] = "60"
+                    ["RateLimiting:LoginWindowSeconds"] = "60",
+                    ["Storage:PersonImagesPath"] = string.Empty
                 });
             });
 

@@ -7,7 +7,7 @@ namespace DVLD.Api.Services.Implementations
     /// <summary>
     /// Application service implementation for <see cref="ApplicationTypeDto"/> records.
     /// </summary>
-    public class ApplicationTypeService : IApplicationTypeService
+    internal sealed class ApplicationTypeService : IApplicationTypeService
     {
         private readonly IApplicationTypeRepository _repository;
         private readonly ILogger<ApplicationTypeService> _logger;

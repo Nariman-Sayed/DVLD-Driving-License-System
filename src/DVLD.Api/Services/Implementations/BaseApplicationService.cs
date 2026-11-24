@@ -8,7 +8,7 @@ namespace DVLD.Api.Services.Implementations
     /// <summary>
     /// Application service implementation for <see cref="BaseApplicationDto"/> records.
     /// </summary>
-    public class BaseApplicationService : IBaseApplicationService
+    internal sealed class BaseApplicationService : IBaseApplicationService
     {
         private readonly IBaseApplicationRepository _repository;
         private readonly IApplicationTypeRepository _applicationTypeRepository;

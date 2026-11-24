@@ -7,7 +7,7 @@ namespace DVLD.Api.Services.Implementations
     /// <summary>
     /// Application service implementation for <see cref="TestTypeDto"/> records.
     /// </summary>
-    public class TestTypeService : ITestTypeService
+    internal sealed class TestTypeService : ITestTypeService
     {
         private readonly ITestTypeRepository _repository;
         private readonly ILogger<TestTypeService> _logger;
